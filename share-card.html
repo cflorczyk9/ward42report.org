@@ -1,0 +1,215 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,72,500;0,72,600;0,72,700;1,72,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --paper: #f6f1e7;
+    --paper-2: #efe7d6;
+    --ink: #1c1a16;
+    --ink-soft: #4a463d;
+    --rule: #d8cdb4;
+    --blue: #0089CF;
+    --red: #C60C30;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    background: var(--paper);
+    background-image:
+      linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
+    font-family: "IBM Plex Sans", sans-serif;
+    color: var(--ink);
+    position: relative;
+  }
+
+  .flag-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    background: var(--blue);
+  }
+
+  .card {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: 1200px;
+    height: 620px;
+    padding: 56px 72px 40px 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .top {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .star {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    color: var(--red);
+    line-height: 1;
+    font-size: 18px;
+    transform: translateY(-1px);
+  }
+
+  h1 {
+    margin: 0;
+    font-family: "Newsreader", serif;
+    font-weight: 600;
+    font-size: 68px;
+    line-height: 1.06;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    max-width: 980px;
+  }
+
+  .subtitle {
+    margin: 0;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 1.4;
+    color: var(--ink-soft);
+    max-width: 860px;
+  }
+
+  .hairline {
+    width: 100%;
+    height: 1px;
+    background: var(--rule);
+    margin: 8px 0 0 0;
+  }
+
+  .stats {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .stat {
+    flex: 1;
+    padding: 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: flex-start;
+  }
+
+  .stat:first-child {
+    padding-left: 0;
+  }
+
+  .stat:last-child {
+    padding-right: 0;
+  }
+
+  .stat + .stat {
+    border-left: 1px solid var(--rule);
+  }
+
+  .stat-figure {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    color: var(--blue);
+  }
+
+  .stat-label {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 1.35;
+    color: var(--ink);
+  }
+
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .footer {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: 0.01em;
+    color: var(--ink-soft);
+  }
+
+  .flag-stars {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .flag-stars .star {
+    font-size: 15px;
+  }
+</style>
+
+<div class="flag-bar"></div>
+
+<div class="card">
+  <div class="top">
+    <div class="kicker"><span class="star">&#9733;</span> An Independent Civic Report</div>
+    <h1>The 42nd Ward Service Report</h1>
+    <p class="subtitle">How fast the ward resolves resident 311 requests, live from the city&rsquo;s data.</p>
+  </div>
+
+  <div>
+    <div class="hairline"></div>
+    <div class="stats" style="margin-top: 28px;">
+      <div class="stat">
+        <div class="stat-figure">87%</div>
+        <div class="stat-label">of requests resolved</div>
+      </div>
+      <div class="stat">
+        <div class="stat-figure">~4 days</div>
+        <div class="stat-label">to fill a pothole, vs ~16 days citywide</div>
+      </div>
+      <div class="stat">
+        <div class="stat-figure">6th</div>
+        <div class="stat-label">fastest of 50 Chicago wards</div>
+      </div>
+    </div>
+    <div class="hairline" style="margin-top: 28px;"></div>
+    <div class="footer-row" style="margin-top: 18px;">
+      <div class="footer">Live from the City of Chicago 311 open data. Independent, community-built.</div>
+      <div class="flag-stars">
+        <span class="star">&#9733;</span>
+        <span class="star">&#9733;</span>
+      </div>
+    </div>
+  </div>
+</div>

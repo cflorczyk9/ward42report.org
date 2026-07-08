@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>42nd Ward 311 Responsiveness</title>
+<!--
+  EMBED WIDGET for ward42chicago.com
+  Host this file, then drop it into an iframe (~320-720px wide, ~380px tall).
+  Pass the full report URL with a ?report= parameter. No file editing needed:
+
+  <iframe src="https://YOUR-HOST/embed.html?report=https://YOUR-HOST/index.html"
+          style="width:100%;max-width:640px;height:380px;border:0;" loading="lazy"
+          title="42nd Ward 311 Responsiveness"></iframe>
+
+  Prefer to hard-code it instead? Set REPORT_URL_DEFAULT in the script below.
+  With no report URL set, the "full report" link hides itself automatically.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#f6f4ee;
+    --surface:#faf9f5;
+    --surface2:#ffffff;
+    --ink:#1a1a17;
+    --ink-2:#57564f;
+    --ink-muted:#8a887f;
+    --hairline:#e3e1d8;
+    --blue:#0089cf;
+    --blue-wash:rgba(0,137,207,.10);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --page:#141412;
+      --surface:#1c1c19;
+      --surface2:#201f1c;
+      --ink:#f2f1ea;
+      --ink-2:#b9b7ac;
+      --ink-muted:#9a988d;
+      --hairline:#332f28;
+      --blue:#4fb2e8;
+      --blue-wash:rgba(79,178,232,.14);
+      color-scheme: dark;
+    }
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:var(--page);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", -apple-system, sans-serif;
+    line-height:1.4;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  .serif{ font-family:"Newsreader", Georgia, serif; }
+
+  .card{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    height:100%;
+    min-height:340px;
+    padding:16px 18px 12px;
+    background:var(--surface);
+  }
+
+  .head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:10.5px;
+    letter-spacing:.10em;
+    text-transform:uppercase;
+    color:var(--blue);
+    font-weight:600;
+  }
+  .title{
+    font-family:"Newsreader", Georgia, serif;
+    font-weight:600;
+    font-size:19px;
+    margin:2px 0 0;
+    color:var(--ink);
+  }
+  .as-of{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:10.5px;
+    color:var(--ink-muted);
+    white-space:nowrap;
+  }
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+    flex:1;
+  }
+  @media (max-width:460px){
+    .stats{ grid-template-columns:1fr; }
+  }
+  .stat{
+    background:var(--surface2);
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:10px 11px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:3px;
+    min-height:78px;
+  }
+  .stat-value{
+    font-family:"IBM Plex Mono", monospace;
+    font-weight:600;
+    font-size:22px;
+    color:var(--blue);
+    line-height:1.1;
+  }
+  .stat-value.skeleton{
+    color:transparent;
+    background:linear-gradient(90deg, var(--hairline) 25%, var(--page) 37%, var(--hairline) 63%);
+    background-size:400% 100%;
+    animation:shimmer 1.4s ease infinite;
+    border-radius:4px;
+    display:inline-block;
+    width:64px;
+  }
+  @keyframes shimmer{
+    0%{ background-position:100% 50%; }
+    100%{ background-position:0 50%; }
+  }
+  .stat-label{
+    font-size:12px;
+    color:var(--ink-2);
+  }
+  .stat-note{
+    font-size:10.5px;
+    color:var(--ink-muted);
+  }
+
+  .links{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    font-size:12.5px;
+    padding-top:2px;
+    border-top:1px solid var(--hairline);
+    padding-top:10px;
+  }
+  a{
+    color:var(--blue);
+    text-decoration:none;
+    font-weight:500;
+  }
+  a:hover{ text-decoration:underline; }
+  .cta{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+  }
+  .cta-311{
+    background:var(--blue-wash);
+    border:1px solid var(--blue);
+    border-radius:999px;
+    padding:5px 11px;
+    color:var(--blue);
+  }
+  .cta-311:hover{ text-decoration:none; background:transparent; }
+
+  .foot{
+    font-size:10.5px;
+    color:var(--ink-muted);
+    line-height:1.5;
+  }
+  .foot a{ color:var(--ink-muted); text-decoration:underline; text-underline-offset:2px; }
+
+  .fallback-flag{
+    font-size:10px;
+    color:var(--ink-muted);
+    font-style:italic;
+  }
+
+  :focus-visible{ outline:none; box-shadow:0 0 0 3px var(--blue-wash); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="head">
+    <div>
+      <div class="eyebrow">42nd Ward</div>
+      <h1 class="title">311 Responsiveness</h1>
+    </div>
+    <div class="as-of" id="asOf">Last 12 months</div>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat">
+      <span class="stat-value skeleton" id="valResolved">&nbsp;</span>
+      <span class="stat-label" id="labelResolved">of requests resolved</span>
+      <span class="stat-note" id="noteResolved">&nbsp;</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value skeleton" id="valPothole">&nbsp;</span>
+      <span class="stat-label">to fill a pothole here</span>
+      <span class="stat-note" id="notePothole">&nbsp;</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value skeleton" id="valRank">&nbsp;</span>
+      <span class="stat-label">for speed among Chicago wards</span>
+      <span class="stat-note" id="noteRank">&nbsp;</span>
+    </div>
+  </div>
+
+  <div class="links">
+    <a class="cta" id="reportLink" href="#" style="display:none" target="_blank" rel="noopener">
+      See the full 42nd Ward Service Report &rarr;
+    </a>
+    <a class="cta cta-311" href="https://311.chicago.gov/" target="_blank" rel="noopener">
+      Report a problem to 311
+    </a>
+  </div>
+
+  <div class="foot">
+    Live from City of Chicago 311 open data, updated on each page load.
+    Independent tool built for ward residents, not an official City of Chicago product.
+    <span id="fallbackNote" class="fallback-flag"></span>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ============================================================
+  // CONFIG: set the full report URL, or pass ?report=... on the iframe src.
+  //   Leave REPORT_URL_DEFAULT empty to rely on the ?report= parameter.
+  // ============================================================
+  var REPORT_URL_DEFAULT = "";
+  var reportUrl = REPORT_URL_DEFAULT;
+  try {
+    reportUrl = new URLSearchParams(location.search).get("report") || REPORT_URL_DEFAULT || "";
+  } catch (e) { reportUrl = REPORT_URL_DEFAULT || ""; }
+  (function wireReportLink(){
+    var a = document.getElementById("reportLink");
+    if (!a) return;
+    if (reportUrl && /^https?:\/\//i.test(reportUrl)) {
+      a.href = reportUrl;
+      a.style.display = "";
+    } else {
+      a.style.display = "none"; // no report URL configured, hide rather than ship a broken link
+    }
+  })();
+
+  var WARD = "42";
+  var BASE = "https://data.cityofchicago.org/resource/v6vf-nfxy.json";
+  var POTHOLE_TYPE = "Pothole in Street Complaint";
+  var TIMEOUT_MS = 9000;
+
+  // Rolling 12 month window, computed client side.
+  var since = new Date();
+  since.setDate(since.getDate() - 365);
+  var sinceIso = since.toISOString().slice(0, 19); // floating timestamp, no trailing Z
+
+  // Static fallback figures, used only if a live fetch fails or times out.
+  var FALLBACK = {
+    resolvedPct: "87%",
+    resolvedNote: "based on the latest published report",
+    potholeDays: "~4 days",
+    potholeNote: "vs ~16 citywide",
+    rank: "6th",
+    rankOf: "of 50",
+    rankNote: "based on the latest published report"
+  };
+
+  function ordinal(n){
+    var s = ["th","st","nd","rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  function fetchJSON(url, timeoutMs){
+    var controller = ("AbortController" in window) ? new AbortController() : null;
+    var opts = controller ? { signal: controller.signal } : {};
+    var timer = controller ? setTimeout(function(){ controller.abort(); }, timeoutMs) : null;
+    return fetch(url, opts).then(function(res){
+      if (timer) clearTimeout(timer);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    }).catch(function(err){
+      if (timer) clearTimeout(timer);
+      throw err;
+    });
+  }
+
+  function buildUrl(params){
+    var parts = [];
+    for (var key in params){
+      if (Object.prototype.hasOwnProperty.call(params, key)){
+        parts.push(key + "=" + encodeURIComponent(params[key]));
+      }
+    }
+    return BASE + "?" + parts.join("&");
+  }
+
+  var statusUrl = buildUrl({
+    "$select": "status, count(1) AS n",
+    "$where": "ward='" + WARD + "' AND created_date > '" + sinceIso + "'",
+    "$group": "status"
+  });
+
+  var rankUrl = buildUrl({
+    "$select": "ward, avg(date_diff_d(last_modified_date, created_date)) AS d, count(1) AS n",
+    "$where": "status='Completed' AND created_date > '" + sinceIso + "' AND ward is not null",
+    "$group": "ward",
+    "$order": "d ASC",
+    "$limit": "60"
+  });
+
+  var potholeWardUrl = buildUrl({
+    "$select": "avg(date_diff_d(last_modified_date, created_date)) AS d, count(1) AS n",
+    "$where": "ward='" + WARD + "' AND sr_type='" + POTHOLE_TYPE + "' AND status='Completed' AND created_date > '" + sinceIso + "'"
+  });
+
+  var potholeCityUrl = buildUrl({
+    "$select": "avg(date_diff_d(last_modified_date, created_date)) AS d, count(1) AS n",
+    "$where": "sr_type='" + POTHOLE_TYPE + "' AND status='Completed' AND created_date > '" + sinceIso + "'"
+  });
+
+  function clearSkeleton(el){
+    el.classList.remove("skeleton");
+  }
+
+  function useFallback(which){
+    var flagEl = document.getElementById("fallbackNote");
+    if (flagEl && flagEl.textContent.indexOf("recent figures") === -1){
+      flagEl.textContent = " Some figures below are recent published figures, live numbers were briefly unavailable.";
+    }
+    if (which === "resolved"){
+      var v = document.getElementById("valResolved");
+      var n = document.getElementById("noteResolved");
+      v.textContent = FALLBACK.resolvedPct;
+      n.textContent = FALLBACK.resolvedNote;
+      clearSkeleton(v);
+    }
+    if (which === "pothole"){
+      var vp = document.getElementById("valPothole");
+      var np = document.getElementById("notePothole");
+      vp.textContent = FALLBACK.potholeDays;
+      np.textContent = FALLBACK.potholeNote;
+      clearSkeleton(vp);
+    }
+    if (which === "rank"){
+      var vr = document.getElementById("valRank");
+      var nr = document.getElementById("noteRank");
+      vr.textContent = FALLBACK.rank;
+      nr.textContent = FALLBACK.rankOf + ", " + FALLBACK.rankNote;
+      clearSkeleton(vr);
+    }
+  }
+
+  // Status breakdown, percent resolved
+  fetchJSON(statusUrl, TIMEOUT_MS).then(function(rows){
+    var total = 0, completed = 0;
+    rows.forEach(function(row){
+      var n = parseInt(row.n, 10) || 0;
+      total += n;
+      if ((row.status || "").toLowerCase() === "completed") completed += n;
+    });
+    if (total === 0) throw new Error("no rows");
+    var pct = Math.round((completed / total) * 100);
+    var v = document.getElementById("valResolved");
+    var n = document.getElementById("noteResolved");
+    v.textContent = pct + "%";
+    n.textContent = "of " + total.toLocaleString() + " requests filed here";
+    clearSkeleton(v);
+  }).catch(function(){
+    useFallback("resolved");
+  });
+
+  // Pothole comparison, ward vs citywide
+  Promise.all([
+    fetchJSON(potholeWardUrl, TIMEOUT_MS),
+    fetchJSON(potholeCityUrl, TIMEOUT_MS)
+  ]).then(function(results){
+    var wardRows = results[0], cityRows = results[1];
+    if (!wardRows.length || !cityRows.length) throw new Error("no rows");
+    var wardDays = Math.round(Number(wardRows[0].d));
+    var cityDays = Math.round(Number(cityRows[0].d));
+    if (!isFinite(wardDays) || !isFinite(cityDays)) throw new Error("bad data");
+    var v = document.getElementById("valPothole");
+    var n = document.getElementById("notePothole");
+    v.textContent = "~" + wardDays + " days";
+    n.textContent = "vs ~" + cityDays + " citywide";
+    clearSkeleton(v);
+  }).catch(function(){
+    useFallback("pothole");
+  });
+
+  // Ward speed rank
+  fetchJSON(rankUrl, TIMEOUT_MS).then(function(rows){
+    var sorted = rows.filter(function(row){
+      var w = parseInt(row.ward, 10);
+      return w >= 1 && w <= 50 && row.d != null;
+    }).sort(function(a, b){ return Number(a.d) - Number(b.d); });
+    if (!sorted.length) throw new Error("no rows");
+    var idx = -1;
+    for (var i = 0; i < sorted.length; i++){
+      if (String(parseInt(sorted[i].ward, 10)) === WARD){ idx = i; break; }
+    }
+    if (idx === -1) throw new Error("ward not found");
+    var rank = idx + 1;
+    var v = document.getElementById("valRank");
+    var n = document.getElementById("noteRank");
+    v.textContent = ordinal(rank);
+    n.textContent = "of " + sorted.length + " wards ranked";
+    clearSkeleton(v);
+  }).catch(function(){
+    useFallback("rank");
+  });
+
+})();
+</script>
+
+</body>
+</html>

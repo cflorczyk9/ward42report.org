@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The 42nd Ward Service Report</title>
+<meta name="description" content="An independent, community-built report on how the 42nd Ward handles resident 311 requests, built live from the City of Chicago's open data.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏙️</text></svg>">
+<!-- Social share preview (shows a card when the link is posted). -->
+<meta property="og:title" content="The 42nd Ward Service Report">
+<meta property="og:description" content="How fast Chicago's 42nd Ward resolves resident 311 requests, live from the city's public data.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ward42report.org/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The 42nd Ward Service Report">
+<meta name="twitter:description" content="How fast Chicago's 42nd Ward resolves resident 311 requests, live from the city's public data.">
+<!-- Absolute URL so Facebook and LinkedIn resolve the share card. Update if the domain changes. -->
+<meta property="og:image" content="https://ward42report.org/preview.png">
+<meta name="twitter:image" content="https://ward42report.org/preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+
+<!-- ============================================================
+     SITE CONFIG (edit this one value to turn on analytics)
+       GA_ID: your Google Analytics 4 Measurement ID, like "G-ABCD1234".
+              Get one free at analytics.google.com. Leave "" to disable.
+     Social card image is the og:image / twitter:image meta above. After
+     deploy, change those to your absolute URL for Facebook and LinkedIn.
+     ============================================================ -->
+<script>
+  window.GA_ID = ""; /* <-- paste your GA4 Measurement ID between the quotes, nothing else to change */
+  if (window.GA_ID) {
+    var _gaScript = document.createElement('script');
+    _gaScript.async = true;
+    _gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.GA_ID;
+    document.head.appendChild(_gaScript);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function(){ dataLayer.push(arguments); };
+    gtag('js', new Date());
+    gtag('config', window.GA_ID);
+  }
+</script>
+
+<!-- Arm scroll/entrance animations before first paint, but only when the reader
+     hasn't requested reduced motion and the browser supports IntersectionObserver.
+     Without .anim-ready the page renders fully visible and static (no-JS safe). -->
+<script>
+  (function(){
+    try{
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(!reduce && 'IntersectionObserver' in window){
+        var de = document.documentElement;
+        de.className += (de.className ? ' ' : '') + 'anim-ready';
+      }
+    }catch(e){}
+  })();
+</script></script>
+
+<style>
+
+/* ============================= TOKENS ============================= */
+:root{
+  --page:#f6f4ee;
+  --surface:#faf9f5;
+  --surface2:#ffffff;
+  --ink:#1a1a17;
+  --ink-2:#57564f;
+  --ink-muted:#8a887f;
+  --hairline:#e3e1d8;
+  --hairline-strong:#cfccbf;
+  --blue:#0089cf;
+  --blue-wash:rgba(0,137,207,.10);
+  --blue-wash-strong:rgba(0,137,207,.18);
+  --red:#c60c30;
+  --good:#0ca30c;
+  --good-wash:rgba(12,163,12,.13);
+  --warn:#d98a00;
+  --warn-wash:rgba(217,138,0,.15);
+  --canceled:#8a887f;
+  --canceled-wash:rgba(138,136,127,.15);
+  --shadow-crisp: none;
+  --focus-ring: 0 0 0 3px rgba(0,137,207,.35);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --page:#141412;
+    --surface:#1c1c19;
+    --surface2:#201f1c;
+    --ink:#f2f1ea;
+    --ink-2:#b9b7ac;
+    --ink-muted:#9a988d;
+    --hairline:#332f28;
+    --hairline-strong:#454037;
+    --blue:#4fb2e8;
+    --blue-wash:rgba(79,178,232,.14);
+    --blue-wash-strong:rgba(79,178,232,.24);
+    --red:#ff6b7f;
+    --good:#3fae55;
+    --good-wash:rgba(63,174,85,.16);
+    --warn:#c4872e;
+    --warn-wash:rgba(196,135,46,.18);
+    --canceled:#9a988d;
+    --canceled-wash:rgba(154,152,141,.16);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#141412; --surface:#1c1c19; --surface2:#201f1c; --ink:#f2f1ea; --ink-2:#b9b7ac; --ink-muted:#9a988d;
+  --hairline:#332f28; --hairline-strong:#454037; --blue:#4fb2e8; --blue-wash:rgba(79,178,232,.14); --blue-wash-strong:rgba(79,178,232,.24);
+  --red:#ff6b7f; --good:#3fae55; --good-wash:rgba(63,174,85,.16); --warn:#c4872e; --warn-wash:rgba(196,135,46,.18);
+  --canceled:#9a988d; --canceled-wash:rgba(154,152,141,.16); color-scheme: dark;
+}
+:root[data-theme="light"]{
+  --page:#f6f4ee; --surface:#faf9f5; --surface2:#ffffff; --ink:#1a1a17; --ink-2:#57564f; --ink-muted:#8a887f;
+  --hairline:#e3e1d8; --hairline-strong:#cfccbf; --blue:#0089cf; --blue-wash:rgba(0,137,207,.10); --blue-wash-strong:rgba(0,137,207,.18);
+  --red:#c60c30; --good:#0ca30c; --good-wash:rgba(12,163,12,.13); --warn:#d98a00; --warn-wash:rgba(217,138,0,.15);
+  --canceled:#8a887f; --canceled-wash:rgba(138,136,127,.15); color-scheme: light;
+}
+
+/* ============================= RESET / BASE ============================= */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  background:var(--page);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, sans-serif;
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img{ max-width:100%; }
+a{ color:var(--blue); text-decoration-thickness:1px; text-underline-offset:2px; }
+a:hover{ text-decoration-thickness:2px; }
+button{ font-family:inherit; }
+:focus-visible{ outline:none; box-shadow:var(--focus-ring); border-radius:2px; }
+
+.mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+.serif{ font-family:"Newsreader", Georgia, serif; }
+
+.wrap{ max-width:1180px; margin:0 auto; padding:0 28px; }
+.col-read{ max-width:680px; }
+
+.eyebrow{
+  font-family:"IBM Plex Mono", monospace;
+  font-size:11.5px;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+  font-weight:500;
+}
+
+.hr{ border:none; border-top:1px solid var(--hairline); margin:0; }
+
+section{ padding:56px 0; border-bottom:1px solid var(--hairline); }
+section:last-of-type{ border-bottom:none; }
+
+h2.section-title{
+  font-family:"Newsreader", serif;
+  font-weight:500;
+  font-size:clamp(1.5rem, 1.1rem + 1.4vw, 2.1rem);
+  margin:0 0 8px;
+  letter-spacing:-.01em;
+}
+.section-cap{
+  color:var(--ink-2);
+  font-size:14.5px;
+  max-width:680px;
+  margin:14px 0 0;
+}
+.section-cap em{ font-style:italic; color:var(--ink-muted); }
+.section-head{ margin-bottom:28px; }
+
+/* ============================= MASTHEAD ============================= */
+.masthead{
+  padding:38px 0 26px;
+  position:relative;
+}
+.masthead-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+.masthead h1{
+  font-family:"Newsreader", serif;
+  font-weight:600;
+  font-size:clamp(2rem, 1.4rem + 2.6vw, 3.1rem);
+  line-height:1.05;
+  letter-spacing:-.015em;
+  margin:6px 0 10px;
+}
+.masthead .kicker{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:"IBM Plex Mono",monospace;
+  font-size:11.5px;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+}
+.masthead .kicker .star{ color:var(--red); font-size:10px; }
+.dateline{
+  font-size:14.5px;
+  color:var(--ink-2);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.live-dot{
+  width:7px; height:7px; border-radius:50%;
+  background:var(--good);
+  display:inline-block;
+  box-shadow:0 0 0 3px var(--good-wash);
+  flex:none;
+}
+.theme-toggle{
+  border:1px solid var(--hairline-strong);
+  background:var(--surface2);
+  color:var(--ink-2);
+  border-radius:20px;
+  padding:6px 13px;
+  font-size:12.5px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.theme-toggle:hover{ border-color:var(--ink-muted); color:var(--ink); }
+.flag-rule{
+  height:3px;
+  margin:22px 0 0;
+  background:
+    linear-gradient(90deg, var(--blue) 0 100%);
+  opacity:.7;
+  position:relative;
+}
+.flag-rule .stars{
+  position:absolute; top:-4px; left:0; right:0;
+  display:flex; justify-content:space-between;
+  padding:0 2px;
+}
+.flag-rule .stars span{ color:var(--red); font-size:9px; opacity:.55; }
+
+/* ============================= LEDE ============================= */
+.lede p{
+  font-family:"Newsreader", serif;
+  font-size:clamp(1.15rem, 1.02rem + .4vw, 1.4rem);
+  line-height:1.5;
+  color:var(--ink);
+  margin:0;
+}
+.lede .as-of{
+  margin-top:16px;
+  font-size:13px;
+  color:var(--ink-muted);
+}
+
+/* ============================= HERO FIGURES ============================= */
+.figures{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  border-top:1px solid var(--hairline);
+}
+.figure{
+  padding:22px 22px 22px 0;
+  border-right:1px solid var(--hairline);
+}
+.figure:last-child{ border-right:none; }
+.figure:first-child{ padding-left:0; }
+.figure .fig-value{
+  font-family:"IBM Plex Mono", monospace;
+  font-weight:600;
+  font-size:clamp(1.7rem, 1.3rem + 1.4vw, 2.4rem);
+  line-height:1;
+  color:var(--ink);
+  display:block;
+}
+.figure .fig-value .unit{ font-size:.5em; color:var(--ink-2); margin-left:3px; font-weight:500; }
+.figure .fig-cap{
+  margin-top:10px;
+  font-size:13.5px;
+  color:var(--ink-2);
+  max-width:22ch;
+}
+@media (max-width:860px){
+  .figures{ grid-template-columns:repeat(2,1fr); }
+  .figure{ border-right:1px solid var(--hairline); padding:18px; }
+  .figure:nth-child(2n){ border-right:none; }
+  .figure:nth-child(odd){ padding-left:0; }
+  .figure:nth-child(-n+2){ border-bottom:1px solid var(--hairline); }
+}
+
+/* ============================= CHART CHROME ============================= */
+.chart-wrap{ width:100%; }
+.chart-wrap svg{ display:block; width:100%; height:auto; overflow:visible; }
+.chart-scroll{ overflow-x:auto; overflow-y:hidden; }
+.bar-row{ cursor:pointer; }
+.bar-row rect.bar-fill{ transition:opacity .12s ease, filter .12s ease; }
+.bar-row:hover rect.bar-fill, .bar-row.is-hover rect.bar-fill{ filter:brightness(1.08); }
+.bar-row.is-dim rect.bar-fill{ opacity:.32; }
+.bar-row.is-active rect.bar-fill{ filter:brightness(.92); }
+.bar-label{ font-family:"IBM Plex Sans", sans-serif; font-size:13px; fill:var(--ink-2); }
+.bar-value{ font-family:"IBM Plex Mono", monospace; font-size:12.5px; fill:var(--ink); font-weight:500; }
+.axis-tick text{ font-family:"IBM Plex Mono", monospace; font-size:11px; fill:var(--ink-muted); }
+.gridline{ stroke:var(--hairline); stroke-width:1; }
+.chart-note{
+  margin-top:6px;
+  font-size:12.5px;
+  color:var(--ink-muted);
+}
+.chart-callout{
+  margin-top:14px;
+  padding:12px 14px;
+  border-left:2px solid var(--red);
+  background:transparent;
+  font-size:13.5px;
+  color:var(--ink-2);
+}
+.chart-callout b{ color:var(--ink); font-weight:600; }
+
+.active-filter-chip{
+  display:none;
+  align-items:center;
+  gap:8px;
+  margin:0 0 18px;
+  font-size:13px;
+  color:var(--ink-2);
+}
+.active-filter-chip.is-visible{ display:inline-flex; }
+.active-filter-chip .chip{
+  background:var(--blue-wash);
+  color:var(--blue);
+  border:1px solid var(--blue-wash-strong);
+  border-radius:20px;
+  padding:4px 10px 4px 12px;
+  display:inline-flex; align-items:center; gap:8px;
+  font-weight:500;
+}
+.active-filter-chip .chip button{
+  background:none; border:none; cursor:pointer; color:inherit; font-size:14px; line-height:1;
+  padding:0 2px;
+}
+
+/* Tooltip (shared) */
+.viz-tooltip{
+  position:fixed;
+  pointer-events:none;
+  background:var(--ink);
+  color:var(--page);
+  font-size:12.5px;
+  padding:8px 11px;
+  border-radius:4px;
+  z-index:900;
+  opacity:0;
+  transform:translate(-50%,-100%);
+  transition:opacity .08s ease;
+  max-width:240px;
+  line-height:1.45;
+}
+:root[data-theme="dark"] .viz-tooltip, @media (prefers-color-scheme:dark){ .viz-tooltip{} }
+.viz-tooltip.is-visible{ opacity:1; }
+.viz-tooltip .tt-value{ font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13.5px; }
+.viz-tooltip .tt-label{ opacity:.78; margin-top:2px; }
+
+/* ============================= STATUS BAR (getting to done) ============================= */
+.status-hero{
+  display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:22px;
+}
+.status-hero .big{
+  font-family:"IBM Plex Mono",monospace; font-weight:600;
+  font-size:clamp(2.2rem,1.7rem+2vw,3.2rem);
+  color:var(--good);
+}
+.status-hero .big-cap{ color:var(--ink-2); font-size:15px; max-width:36ch; }
+.status-stack{ width:100%; height:34px; border-radius:4px; overflow:hidden; display:flex; background:var(--hairline); }
+.status-seg{ height:100%; display:flex; align-items:center; justify-content:center; position:relative; }
+.status-legend{ display:flex; gap:22px; flex-wrap:wrap; margin-top:14px; font-size:13.5px; }
+.status-legend .item{ display:flex; align-items:center; gap:7px; color:var(--ink-2); }
+.status-legend .sw{ width:11px; height:11px; border-radius:3px; flex:none; }
+
+/* ============================= FILTER ROW ============================= */
+.filter-row{
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:6px;
+  margin-bottom:18px;
+}
+.filter-row select, .filter-row input[type="search"]{
+  font-family:"IBM Plex Sans", sans-serif;
+  font-size:13.5px;
+  padding:8px 11px;
+  border:1px solid var(--hairline-strong);
+  border-radius:5px;
+  background:var(--surface2);
+  color:var(--ink);
+  min-width:0;
+}
+.filter-row input[type="search"]{ flex:1 1 200px; min-width:160px; }
+.status-toggle{ display:flex; border:1px solid var(--hairline-strong); border-radius:5px; overflow:hidden; }
+.status-toggle button{
+  border:none; background:var(--surface2); color:var(--ink-2);
+  font-size:13px; padding:8px 13px; cursor:pointer; border-right:1px solid var(--hairline-strong);
+}
+.status-toggle button:last-child{ border-right:none; }
+.status-toggle button.is-active{ background:var(--ink); color:var(--surface); }
+.filter-reset{
+  background:none; border:1px solid var(--hairline-strong); color:var(--ink-2);
+  border-radius:5px; padding:8px 12px; font-size:13px; cursor:pointer; margin-left:auto;
+}
+.filter-reset:hover{ color:var(--ink); border-color:var(--ink-muted); }
+.filter-count{ font-size:12.5px; color:var(--ink-muted); margin-left:4px; white-space:nowrap; }
+
+/* ============================= MAP ============================= */
+.map-shell{ position:relative; border:1px solid var(--hairline); border-radius:6px; overflow:hidden; }
+#map{ height:480px; width:100%; background:var(--surface); }
+.map-legend{
+  position:absolute; bottom:12px; left:12px; z-index:500;
+  background:var(--surface2); border:1px solid var(--hairline);
+  border-radius:6px; padding:10px 13px; font-size:12.5px;
+  display:flex; flex-direction:column; gap:6px;
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+.map-legend .item{ display:flex; align-items:center; gap:7px; color:var(--ink-2); }
+.map-legend .sw{ width:10px; height:10px; border-radius:50%; flex:none; border:1.5px solid var(--surface2); }
+.map-fallback{
+  padding:40px 20px; text-align:center; color:var(--ink-2); font-size:14px;
+}
+.leaflet-popup-content-wrapper{ background:var(--surface2); color:var(--ink); border-radius:5px; }
+.leaflet-popup-tip{ background:var(--surface2); }
+.map-popup-btn{
+  margin-top:6px; font-size:12.5px; color:var(--blue); background:none; border:none; padding:0; cursor:pointer; text-decoration:underline;
+}
+
+/* ============================= TABLE ============================= */
+.table-scroll{ overflow-x:auto; border:1px solid var(--hairline); border-radius:6px; }
+table.sr-table{ width:100%; border-collapse:collapse; min-width:720px; font-size:13.5px; }
+table.sr-table thead th{
+  text-align:left; font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ink-muted); font-weight:500; padding:11px 14px; background:var(--surface); border-bottom:1px solid var(--hairline);
+  position:sticky; top:0;
+}
+table.sr-table tbody td{ padding:11px 14px; border-bottom:1px solid var(--hairline); color:var(--ink-2); vertical-align:middle; }
+table.sr-table tbody tr{ cursor:pointer; }
+table.sr-table tbody tr:hover{ background:var(--blue-wash); }
+table.sr-table tbody tr:last-child td{ border-bottom:none; }
+table.sr-table td.addr{ color:var(--ink); font-weight:500; }
+table.sr-table td.days{ font-family:"IBM Plex Mono",monospace; color:var(--ink); white-space:nowrap; }
+.status-chip{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:12px; font-weight:500; padding:3px 9px 3px 7px; border-radius:20px; white-space:nowrap;
+}
+.status-chip::before{ content:""; width:6px; height:6px; border-radius:50%; display:inline-block; }
+.status-chip.st-completed{ background:var(--good-wash); color:var(--good); }
+.status-chip.st-completed::before{ background:var(--good); }
+.status-chip.st-open{ background:var(--warn-wash); color:var(--warn); }
+.status-chip.st-open::before{ background:var(--warn); }
+.status-chip.st-canceled{ background:var(--canceled-wash); color:var(--canceled); }
+.status-chip.st-canceled::before{ background:var(--canceled); }
+
+.table-foot{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:12.5px; color:var(--ink-muted); flex-wrap:wrap; gap:8px;}
+.pager{ display:flex; gap:8px; align-items:center; }
+.pager button{ background:none; border:1px solid var(--hairline-strong); border-radius:4px; padding:5px 10px; cursor:pointer; color:var(--ink-2); font-size:12.5px; }
+.pager button:disabled{ opacity:.4; cursor:default; }
+
+/* ============================= DETAIL PANEL ============================= */
+.detail-backdrop{
+  position:fixed; inset:0; background:rgba(20,20,18,.42); z-index:1000;
+  display:none; align-items:flex-start; justify-content:center; padding:8vh 20px 20px;
+  overflow-y:auto;
+}
+.detail-backdrop.is-open{ display:flex; }
+.detail-panel{
+  background:var(--surface2); border:1px solid var(--hairline); border-radius:8px;
+  max-width:520px; width:100%; padding:28px 28px 26px; position:relative;
+  box-shadow:0 8px 30px rgba(0,0,0,.18);
+}
+.detail-close{
+  position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; line-height:1;
+  cursor:pointer; color:var(--ink-muted); padding:4px;
+}
+.detail-close:hover{ color:var(--ink); }
+.detail-panel h3{ font-family:"Newsreader",serif; font-weight:500; font-size:1.4rem; margin:0 26px 4px 0; }
+.detail-panel .detail-sub{ color:var(--ink-muted); font-size:13px; margin-bottom:18px; }
+.detail-grid{ display:grid; grid-template-columns:auto 1fr; gap:9px 16px; font-size:14px; margin-bottom:20px; }
+.detail-grid dt{ color:var(--ink-muted); font-size:12px; text-transform:uppercase; letter-spacing:.05em; font-family:"IBM Plex Mono",monospace; padding-top:2px; }
+.detail-grid dd{ margin:0; color:var(--ink); }
+.detail-links{ display:flex; gap:16px; flex-wrap:wrap; padding-top:16px; border-top:1px solid var(--hairline); font-size:13.5px; }
+
+/* ============================= LOADING / ERROR ============================= */
+.skeleton{ background:linear-gradient(90deg,var(--hairline) 25%, var(--surface) 50%, var(--hairline) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:4px; }
+@keyframes shimmer{ 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+.skel-figure{ height:64px; }
+.skel-chart{ height:220px; }
+.error-banner{
+  display:none; align-items:flex-start; gap:10px; padding:13px 15px; border:1px solid var(--warn); background:var(--warn-wash);
+  border-radius:6px; font-size:13.5px; color:var(--ink); margin-bottom:16px;
+}
+.error-banner.is-visible{ display:flex; }
+.cache-banner{
+  display:none; padding:10px 14px; border:1px solid var(--hairline-strong); border-radius:6px; font-size:12.5px; color:var(--ink-muted); margin-bottom:16px; background:var(--surface);
+}
+.cache-banner.is-visible{ display:block; }
+
+/* ============================= METHODOLOGY / FOOTER ============================= */
+.methodology p{ color:var(--ink-2); font-size:14.5px; margin:0 0 14px; }
+.methodology p:last-child{ margin-bottom:0; }
+.methodology a{ color:var(--blue); }
+footer.site-footer{ padding:34px 0 60px; }
+footer.site-footer p{ font-size:12.5px; color:var(--ink-muted); margin:0; }
+
+.sr-only{ position:absolute; width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
+
+@media (max-width:640px){
+  .wrap{ padding:0 18px; }
+  section{ padding:40px 0; }
+  .filter-row{ gap:8px; }
+  .filter-reset{ margin-left:0; }
+}
+.report-cta{ margin:6px 0 42px; }
+.report-cta-inner{ display:flex; flex-wrap:wrap; gap:16px 22px; align-items:center; justify-content:space-between; border:1px solid var(--hairline); border-left:3px solid var(--blue); border-radius:6px; padding:18px 22px; background:var(--surface2); }
+.report-cta-kicker{ font-family:"Newsreader",serif; font-size:1.18rem; font-weight:500; color:var(--ink); }
+.report-cta-sub{ font-size:14px; color:var(--ink-muted); margin-top:3px; max-width:56ch; }
+.report-cta-btn{ flex:0 0 auto; background:var(--blue); color:#fff; text-decoration:none; font-weight:600; font-size:14px; padding:11px 18px; border-radius:6px; white-space:nowrap; }
+.report-cta-btn:hover{ filter:brightness(1.07); }
+
+/* ============================= MOTION / ENTRANCES ============================= */
+/* All entrances are opt-in via .anim-ready on <html> (set synchronously in the
+   head, only when motion is allowed and IntersectionObserver exists). Without
+   that class every rule below is inert, so reduced-motion and no-JS readers get
+   a fully visible, fully static page. */
+.anim-ready .wrap > section,
+.anim-ready .wrap > .masthead{
+  opacity:0;
+  transform:translateY(16px);
+}
+.anim-ready .wrap > section.is-revealed,
+.anim-ready .wrap > .masthead.is-revealed{
+  opacity:1;
+  transform:none;
+  transition:opacity .6s ease, transform .7s cubic-bezier(.22,.61,.36,1);
+}
+/* The blue rule under the masthead draws across as the header settles in. */
+.anim-ready .flag-rule{ transform:scaleX(0); transform-origin:left center; }
+.anim-ready .masthead.is-revealed .flag-rule{
+  transform:scaleX(1);
+  transition:transform .85s cubic-bezier(.22,.61,.36,1) .15s;
+}
+/* The live-data dot gets a slow, quiet pulse ring (reinforces "updates live"). */
+@media (prefers-reduced-motion: no-preference){
+  .live-dot{ position:relative; }
+  .live-dot::after{
+    content:"";
+    position:absolute;
+    left:50%; top:50%;
+    width:7px; height:7px;
+    border-radius:50%;
+    background:var(--good);
+    transform:translate(-50%,-50%);
+    animation:livePulse 2.8s ease-out infinite;
+    pointer-events:none;
+  }
+}
+@keyframes livePulse{
+  0%{ opacity:.5; transform:translate(-50%,-50%) scale(1); }
+  70%{ opacity:0; transform:translate(-50%,-50%) scale(3.4); }
+  100%{ opacity:0; transform:translate(-50%,-50%) scale(3.4); }
+}
+/* Belt-and-suspenders: if the class is ever present under reduced motion, do not hide. */
+@media (prefers-reduced-motion: reduce){
+  .anim-ready .wrap > section,
+  .anim-ready .wrap > .masthead{ opacity:1 !important; transform:none !important; }
+  .anim-ready .flag-rule{ transform:none !important; }
+  .live-dot::after{ animation:none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ============================= 1. MASTHEAD ============================= -->
+  <header class="masthead">
+    <div class="masthead-top">
+      <div>
+        <div class="kicker"><span class="star">★</span> AN INDEPENDENT CIVIC REPORT <span class="star">★</span></div>
+        <h1 class="serif">The 42nd Ward Service Report</h1>
+        <div class="dateline">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span>Live from the City of Chicago 311 system, updated every time this page loads.</span>
+        </div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark mode">Toggle theme</button>
+    </div>
+    <div class="flag-rule" aria-hidden="true"></div>
+  </header>
+
+  <!-- ============================= 2. LEDE ============================= -->
+  <section class="lede" aria-label="Summary">
+    <div class="col-read">
+      <p id="ledeText">
+        <span class="skeleton" style="display:inline-block;width:100%;height:88px;"></span>
+      </p>
+      <div class="as-of" id="ledeAsOf"></div>
+    </div>
+  </section>
+
+  <!-- ============================= 3. HERO FIGURES ============================= -->
+  <section aria-label="Headline figures">
+    <div class="figures" id="figuresGrid">
+      <div class="figure"><div class="skeleton skel-figure"></div></div>
+      <div class="figure"><div class="skeleton skel-figure"></div></div>
+      <div class="figure"><div class="skeleton skel-figure"></div></div>
+      <div class="figure"><div class="skeleton skel-figure"></div></div>
+    </div>
+  </section>
+
+  <!-- ============================= 3b. REPORT CTA ============================= -->
+  <section aria-label="Report an issue" class="report-cta">
+    <div class="report-cta-inner">
+      <div>
+        <div class="report-cta-kicker">See a problem in the ward?</div>
+        <div class="report-cta-sub">Potholes, graffiti, broken lights, missed pickups. Filing it with 311 is how it enters the system you see tracked above.</div>
+      </div>
+      <a class="report-cta-btn" id="reportCtaBtn" href="https://311.chicago.gov/" target="_blank" rel="noopener">Report it to 311 &rarr;</a>
+    </div>
+  </section>
+
+  <!-- ============================= 4. WHAT RESIDENTS ASK FOR ============================= -->
+  <section aria-labelledby="typesTitle">
+    <div class="section-head">
+      <div class="eyebrow">Volume</div>
+      <h2 class="section-title serif" id="typesTitle">What residents ask for</h2>
+      <p class="section-cap">The most common service requests filed in the ward over the past 12 months. Click a bar to filter the map and table below to that request type.</p>
+    </div>
+    <div class="error-banner" id="typesError"></div>
+    <div class="active-filter-chip" id="typesChipHolder"></div>
+    <div class="chart-scroll">
+      <div class="chart-wrap" id="typesChart"><div class="skeleton skel-chart"></div></div>
+    </div>
+  </section>
+
+  <!-- ============================= 5. HOW FAST IT GETS FIXED ============================= -->
+  <section aria-labelledby="resTitle">
+    <div class="section-head">
+      <div class="eyebrow">Responsiveness</div>
+      <h2 class="section-title serif" id="resTitle">How fast it gets fixed</h2>
+      <p class="section-cap">Estimated days from filing to resolution, by request type. Because 311 has no "closed" timestamp, this is approximated from each request's last update. <em>Fastest at top.</em></p>
+    </div>
+    <div class="error-banner" id="resError"></div>
+    <div class="chart-scroll">
+      <div class="chart-wrap" id="resChart"><div class="skeleton skel-chart"></div></div>
+    </div>
+    <div class="chart-callout" id="resCallout" style="display:none;"></div>
+  </section>
+
+  <!-- ============================= 6. GETTING TO DONE ============================= -->
+  <section aria-labelledby="doneTitle">
+    <div class="section-head">
+      <div class="eyebrow">Outcomes</div>
+      <h2 class="section-title serif" id="doneTitle">Getting to done</h2>
+    </div>
+    <div class="error-banner" id="statusError"></div>
+    <div id="statusBlock">
+      <div class="skeleton" style="height:34px;border-radius:4px;"></div>
+    </div>
+    <p class="section-cap" style="margin-top:18px;">Of every request filed in the past 12 months, this share reached each outcome. A canceled request is typically a duplicate, withdrawn, or found not to require city action. <span id="weekStatLine"></span></p>
+  </section>
+
+  <!-- ============================= 7. REQUESTS OVER TIME ============================= -->
+  <section aria-labelledby="trendTitle">
+    <div class="section-head">
+      <div class="eyebrow">Trend</div>
+      <h2 class="section-title serif" id="trendTitle">Requests over time</h2>
+      <p class="section-cap">Monthly request volume over the last 24 months. Hover to see a given month's count. Volume has stayed within a steady band, with no backlog spiral.</p>
+    </div>
+    <div class="error-banner" id="trendError"></div>
+    <div class="chart-scroll">
+      <div class="chart-wrap" id="trendChart"><div class="skeleton skel-chart"></div></div>
+    </div>
+  </section>
+
+  <!-- ============================= 7b. HOW THE WARD COMPARES ============================= -->
+  <section aria-labelledby="cmpTitle">
+    <div class="section-head">
+      <div class="eyebrow">Benchmark</div>
+      <h2 class="section-title serif" id="cmpTitle">How the ward compares</h2>
+      <p class="section-cap">By the city's own data, the 42nd Ward closes requests faster than most of Chicago. <span id="rankLine"></span> Because every ward files a different mix of requests, the fairest read is type by type. Ward in blue, the citywide average in gray.</p>
+    </div>
+    <div class="error-banner" id="cmpError"></div>
+    <div class="chart-scroll">
+      <div class="chart-wrap" id="cmpChart"><div class="skeleton skel-chart"></div></div>
+    </div>
+    <div class="chart-callout" id="cmpCallout" style="display:none;"></div>
+  </section>
+
+  <!-- ============================= 7c. POTHOLES OVER TIME VS CITY ============================= -->
+  <section aria-labelledby="potTitle">
+    <div class="section-head">
+      <div class="eyebrow">Benchmark over time</div>
+      <h2 class="section-title serif" id="potTitle">Potholes, the ward versus the city</h2>
+      <p class="section-cap">Average days to fill a pothole, month by month. The gap is widest in spring, when potholes spike and the citywide backlog climbs. Ward 42 in blue, the citywide average in gray.</p>
+    </div>
+    <div class="error-banner" id="potError"></div>
+    <div class="chart-scroll">
+      <div class="chart-wrap" id="potholeChart"><div class="skeleton skel-chart"></div></div>
+    </div>
+  </section>
+
+  <!-- ============================= 7d. WHAT'S ON MY BLOCK ============================= -->
+  <section aria-labelledby="blockTitle" id="blockSection">
+    <div class="section-head">
+      <div class="eyebrow">Near you</div>
+      <h2 class="section-title serif" id="blockTitle">What's on my block</h2>
+      <p class="section-cap">Type an address, or share your location, to see recent 311 activity within about two blocks of that spot.</p>
+    </div>
+    <div class="error-banner" id="blockError"></div>
+    <div class="filter-row" id="blockForm">
+      <input type="search" id="blockAddress" placeholder="Type an address in the ward&hellip;" aria-label="Address in Ward 42">
+      <button class="filter-reset" id="blockSearchBtn" type="button">Search</button>
+      <button class="filter-reset" id="blockGeoBtn" type="button">Use my location</button>
+    </div>
+    <p class="chart-note">Address search uses OpenStreetMap Nominatim. &copy; OpenStreetMap contributors.</p>
+    <div id="blockResult"></div>
+  </section>
+
+  <!-- ============================= 8. MAP ============================= -->
+  <section aria-labelledby="mapTitle">
+    <div class="section-head">
+      <div class="eyebrow">Location</div>
+      <h2 class="section-title serif" id="mapTitle">See what's happening near you</h2>
+      <p class="section-cap">Every mapped request from the last 12 months with a location on file. Filter by type, status, or neighborhood, or search an address. Click any pin for the full record.</p>
+    </div>
+    <div class="error-banner" id="mapError"></div>
+    <div class="cache-banner" id="cacheBanner">Showing cached data from your last visit. The live feed didn't respond this time.</div>
+
+    <div class="filter-row" id="filterRow">
+      <select id="fType" aria-label="Filter by request type"><option value="">All request types</option></select>
+      <div class="status-toggle" role="group" aria-label="Filter by status" id="statusToggle">
+        <button type="button" data-status="" class="is-active">All</button>
+        <button type="button" data-status="Completed">Completed</button>
+        <button type="button" data-status="Open">Open</button>
+        <button type="button" data-status="Canceled">Canceled</button>
+      </div>
+      <select id="fNeighborhood" aria-label="Filter by neighborhood"><option value="">All neighborhoods</option></select>
+      <input type="search" id="fSearch" placeholder="Search address or type&hellip;" aria-label="Search address or type">
+      <button class="filter-reset" id="filterReset" type="button">Reset filters</button>
+      <span class="filter-count mono" id="filterCount"></span>
+    </div>
+
+    <div class="map-shell">
+      <div id="map"></div>
+    </div>
+  </section>
+
+  <!-- ============================= 9. RECENT REQUESTS TABLE ============================= -->
+  <section aria-labelledby="tableTitle">
+    <div class="section-head">
+      <div class="eyebrow">Detail</div>
+      <h2 class="section-title serif" id="tableTitle">Recent requests</h2>
+      <p class="section-cap">Filters above also apply here. Click any row for the full record.</p>
+    </div>
+    <div class="error-banner" id="tableError"></div>
+    <div class="table-scroll">
+      <table class="sr-table" id="srTable">
+        <thead>
+          <tr>
+            <th>Address</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Filed</th>
+            <th>Est. days to close</th>
+          </tr>
+        </thead>
+        <tbody id="srTableBody">
+          <tr><td colspan="5"><div class="skeleton" style="height:44px;"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-foot">
+      <span id="tableCount"></span>
+      <div class="pager">
+        <button id="pagePrev" type="button">&larr; Prev</button>
+        <span id="pageLabel" class="mono"></span>
+        <button id="pageNext" type="button">Next &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= 10. METHODOLOGY ============================= -->
+  <section class="methodology" aria-labelledby="methTitle">
+    <div class="section-head">
+      <div class="eyebrow">About this report</div>
+      <h2 class="section-title serif" id="methTitle">Methodology &amp; disclaimer</h2>
+    </div>
+    <div class="col-read">
+      <p><strong>This is an independent, community-built site.</strong> It is not operated by the City of Chicago, the Office of the 42nd Ward Alderman, or any city department, and it has no official standing.</p>
+      <p>Every figure on this page is pulled live from the <a href="https://data.cityofchicago.org/" target="_blank" rel="noopener">City of Chicago's public 311 open data portal</a> at the moment you load it. Nothing is stored on a server, and the only thing saved on your device is a temporary local cache used if the live feed is briefly unavailable. You can <a href="https://data.cityofchicago.org/resource/v6vf-nfxy.json?ward=42&amp;$order=created_date%20DESC&amp;$limit=1000" target="_blank" rel="noopener">view the raw Ward 42 data</a> yourself.</p>
+      <p>The 311 dataset has no "closed date" field, so every resolution-time figure on this page is an <strong>estimate</strong> based on when a request was last updated (<code class="mono">last_modified_date</code>). For most requests that update happens when the work is completed, but this is a proxy, not an exact measurement.</p>
+      <p>311 measures city service delivery, which ward offices help route, escalate, and expedite on residents' behalf. The underlying work (filling potholes, replacing bulbs, painting over graffiti) is performed by city departments such as CDOT and Streets &amp; Sanitation, not the ward office itself.</p>
+      <p>Ward boundaries used for the map's neighborhood filter are approximate bounding boxes, not the official ward shapefile, and are provided for general orientation only.</p>
+    </div>
+  </section>
+
+</div>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Data: City of Chicago 311 Service Requests (dataset v6vf-nfxy), via the Socrata open data API. Report a problem to the city directly at <a href="https://311.chicago.gov/" target="_blank" rel="noopener">311.chicago.gov</a>. This page is unaffiliated and independently built.</p>
+  </div>
+</footer>
+
+<!-- Shared chart tooltip -->
+<div class="viz-tooltip" id="vizTooltip" role="status" aria-live="polite"></div>
+
+<!-- Detail panel -->
+<div class="detail-backdrop" id="detailBackdrop">
+  <div class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <button class="detail-close" id="detailClose" aria-label="Close">&times;</button>
+    <h3 class="serif" id="detailTitle">&nbsp;</h3>
+    <div class="detail-sub" id="detailSub"></div>
+    <dl class="detail-grid" id="detailGrid"></dl>
+    <div class="detail-links" id="detailLinks"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   CONFIG
+   ============================================================ */
+var SOQL_BASE = 'https://data.cityofchicago.org/resource/v6vf-nfxy.json';
+var WARD = '42';
+var CACHE_KEY = 'ward42_detail_cache_v1';
+var CACHE_TIME_KEY = 'ward42_detail_cache_time_v1';
+
+var NEIGHBORHOODS = {
+  'The Loop': { latMin:41.873, latMax:41.888, lonMin:-87.640, lonMax:-87.620 },
+  'River North': { latMin:41.888, latMax:41.898, lonMin:-87.641, lonMax:-87.623 },
+  'Fulton River District': { latMin:41.884, latMax:41.898, lonMin:-87.650, lonMax:-87.638 },
+  'Mag Mile / River East': { latMin:41.888, latMax:41.897, lonMin:-87.628, lonMax:-87.614 },
+  'New East Side': { latMin:41.884, latMax:41.890, lonMin:-87.623, lonMax:-87.610 }
+};
+
+// Loose city-of-Chicago bounding box, used only to catch a geocoder returning a result far outside the city
+var CHICAGO_BOUNDS = { latMin:41.6, latMax:42.05, lonMin:-87.95, lonMax:-87.5 };
+var BLOCK_RADIUS_M = 600;
+
+var COLOR = {}; // filled from CSS custom properties at runtime
+function readCssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function refreshColors(){
+  COLOR.blue = readCssVar('--blue');
+  COLOR.good = readCssVar('--good');
+  COLOR.warn = readCssVar('--warn');
+  COLOR.canceled = readCssVar('--canceled');
+  COLOR.ink = readCssVar('--ink');
+  COLOR.ink2 = readCssVar('--ink-2');
+  COLOR.inkMuted = readCssVar('--ink-muted');
+  COLOR.hairline = readCssVar('--hairline');
+  COLOR.surface2 = readCssVar('--surface2');
+}
+refreshColors();
+
+// Analytics engagement events (no-op until a GA4 Measurement ID is set in the head; GA4 also auto-tracks page views, outbound clicks, and scroll)
+function track(name, params){ try{ if(typeof gtag === 'function'){ gtag('event', name, params || {}); } }catch(e){} }
+
+/* ============================================================
+   DATE / TIME WINDOWS (rolling, computed in-browser)
+   ============================================================ */
+var NOW = new Date();
+function pad2(n){ return (n<10?'0':'')+n; }
+function toSoQL(d){
+  return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+'T'+pad2(d.getHours())+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds());
+}
+var START_12MO = new Date(NOW.getTime() - 365*24*3600*1000);
+var START_24MO = new Date(NOW.getTime() - 730*24*3600*1000);
+var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/* ============================================================
+   URL BUILDERS
+   ============================================================ */
+function buildUrl(parts){
+  var u = SOQL_BASE + '?$select=' + encodeURIComponent(parts.select) + '&$where=' + encodeURIComponent(parts.where);
+  if(parts.group) u += '&$group=' + encodeURIComponent(parts.group);
+  if(parts.order) u += '&$order=' + encodeURIComponent(parts.order);
+  if(parts.limit) u += '&$limit=' + parts.limit;
+  return u;
+}
+
+var CMP_TYPES = "'Pothole in Street Complaint','Graffiti Removal Request','Traffic Signal Out Complaint','Street Light Out Complaint'";
+var URLS = {
+  status: buildUrl({
+    select: 'status, count(1) AS n',
+    where: "ward='" + WARD + "' AND created_date > '" + toSoQL(START_12MO) + "'",
+    group: 'status'
+  }),
+  monthly: buildUrl({
+    select: 'date_extract_y(created_date) AS y, date_extract_m(created_date) AS m, count(1) AS n',
+    where: "ward='" + WARD + "' AND created_date > '" + toSoQL(START_24MO) + "'",
+    group: 'date_extract_y(created_date), date_extract_m(created_date)',
+    order: 'date_extract_y(created_date), date_extract_m(created_date)'
+  }),
+  topTypes: buildUrl({
+    select: 'sr_type, count(1) AS n',
+    where: "ward='" + WARD + "' AND created_date > '" + toSoQL(START_12MO) + "'",
+    group: 'sr_type',
+    order: 'count(1) DESC',
+    limit: 8
+  }),
+  resolution: buildUrl({
+    select: 'sr_type, avg(date_diff_d(last_modified_date, created_date)) AS avg_days, count(1) AS n',
+    where: "ward='" + WARD + "' AND status='Completed' AND created_date > '" + toSoQL(START_12MO) + "'",
+    group: 'sr_type',
+    order: 'count(1) DESC',
+    limit: 12
+  }),
+  detail: buildUrl({
+    select: 'sr_number, sr_type, status, owner_department, street_address, created_date, last_modified_date, latitude, longitude',
+    where: "ward='" + WARD + "' AND created_date > '" + toSoQL(START_12MO) + "'",
+    order: 'created_date DESC',
+    limit: 1000
+  }),
+  cmpWard: buildUrl({
+    select: 'sr_type, avg(date_diff_d(last_modified_date, created_date)) AS avg_days, count(1) AS n',
+    where: "ward='" + WARD + "' AND status='Completed' AND created_date > '" + toSoQL(START_12MO) + "' AND sr_type in(" + CMP_TYPES + ")",
+    group: 'sr_type'
+  }),
+  cmpCity: buildUrl({
+    select: 'sr_type, avg(date_diff_d(last_modified_date, created_date)) AS avg_days, count(1) AS n',
+    where: "status='Completed' AND created_date > '" + toSoQL(START_12MO) + "' AND sr_type in(" + CMP_TYPES + ")",
+    group: 'sr_type'
+  }),
+  wardRank: buildUrl({
+    select: 'ward, avg(date_diff_d(last_modified_date, created_date)) AS d, count(1) AS n',
+    where: "status='Completed' AND created_date > '" + toSoQL(START_12MO) + "' AND ward is not null",
+    group: 'ward',
+    order: 'd ASC',
+    limit: 60
+  }),
+  potWard: buildUrl({
+    select: 'date_extract_y(created_date) AS y, date_extract_m(created_date) AS m, avg(date_diff_d(last_modified_date, created_date)) AS d, count(1) AS n',
+    where: "ward='" + WARD + "' AND status='Completed' AND sr_type='Pothole in Street Complaint' AND created_date > '" + toSoQL(START_24MO) + "'",
+    group: 'date_extract_y(created_date), date_extract_m(created_date)',
+    order: 'date_extract_y(created_date), date_extract_m(created_date)'
+  }),
+  potCity: buildUrl({
+    select: 'date_extract_y(created_date) AS y, date_extract_m(created_date) AS m, avg(date_diff_d(last_modified_date, created_date)) AS d, count(1) AS n',
+    where: "status='Completed' AND sr_type='Pothole in Street Complaint' AND created_date > '" + toSoQL(START_24MO) + "'",
+    group: 'date_extract_y(created_date), date_extract_m(created_date)',
+    order: 'date_extract_y(created_date), date_extract_m(created_date)'
+  }),
+  weekTotal: buildUrl({
+    select: 'count(1) AS n',
+    where: "ward='" + WARD + "' AND status='Completed' AND created_date > '" + toSoQL(START_12MO) + "'"
+  }),
+  weekWithin: buildUrl({
+    select: 'count(1) AS n',
+    where: "ward='" + WARD + "' AND status='Completed' AND created_date > '" + toSoQL(START_12MO) + "' AND date_diff_d(last_modified_date, created_date) <= 7"
+  })
+};
+
+// Built per-lookup (needs a live lat/lon), so it lives outside the static URLS map above
+function buildBlockUrl(lat, lon){
+  return buildUrl({
+    select: 'sr_type, status, street_address, created_date, last_modified_date, latitude, longitude',
+    where: "ward='" + WARD + "' AND within_circle(location, " + lat + ", " + lon + ", " + BLOCK_RADIUS_M + ") AND created_date > '" + toSoQL(START_12MO) + "'",
+    order: 'created_date DESC',
+    limit: 1000
+  });
+}
+
+/* ============================================================
+   FETCH HELPERS
+   ============================================================ */
+function fetchJSON(url, opts){
+  opts = opts || {};
+  var timeout = opts.timeout || 8000;
+  var retries = (typeof opts.retries === 'number') ? opts.retries : 1;
+  function attempt(n){
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var t = ctrl ? setTimeout(function(){ ctrl.abort(); }, timeout) : null;
+    return fetch(url, ctrl ? { signal: ctrl.signal } : {}).then(function(res){
+      if(t) clearTimeout(t);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).catch(function(err){
+      if(t) clearTimeout(t);
+      if(n < retries) return attempt(n+1);
+      throw err;
+    });
+  }
+  return attempt(0);
+}
+
+/* ============================================================
+   SMALL UTILS
+   ============================================================ */
+function fmtInt(n){ return Math.round(n).toLocaleString('en-US'); }
+function fmtDays(n){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  if(n < 1) return (Math.round(n*10)/10) + '';
+  return Math.round(n) + '';
+}
+function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+function parseNum(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
+function titleType(t){
+  if(!t) return 'Unspecified';
+  // light touch: keep as-is (already human readable in this dataset), trim "Complaint"/"Request" duplication spacing
+  return t;
+}
+function daysBetween(aIso, bIso){
+  // (a - b) in days, a and b are ISO date strings
+  var a = new Date(aIso).getTime(), b = new Date(bIso).getTime();
+  if(isNaN(a) || isNaN(b)) return null;
+  return (a - b) / 86400000;
+}
+function fmtDateShort(iso){
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return '—';
+  return MONTH_ABBR[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+}
+function fmtDateLong(iso){
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return '—';
+  return MONTH_NAMES[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+}
+function escapeHtml(s){
+  var div = document.createElement('div');
+  div.textContent = (s === null || s === undefined) ? '' : String(s);
+  return div.innerHTML;
+}
+function statusSlug(s){
+  if(!s) return 'canceled';
+  var v = s.toLowerCase();
+  if(v.indexOf('complet') === 0 || v === 'completed') return 'completed';
+  if(v.indexOf('open') === 0) return 'open';
+  return 'canceled';
+}
+function statusColorVar(s){
+  var slug = statusSlug(s);
+  if(slug === 'completed') return COLOR.good;
+  if(slug === 'open') return COLOR.warn;
+  return COLOR.canceled;
+}
+
+/* ============================================================
+   SVG HELPERS
+   ============================================================ */
+var SVGNS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs){
+  var el = document.createElementNS(SVGNS, tag);
+  if(attrs){ for(var k in attrs){ if(attrs.hasOwnProperty(k)) el.setAttribute(k, attrs[k]); } }
+  return el;
+}
+// Rounded-end bar path: square at baseline (x0), rounded at data-end (x1)
+function roundedBarPath(x0, y, w, h, r){
+  var x1 = x0 + w;
+  r = Math.min(r, w, h/2);
+  if(r < 0.5 || w <= 0){
+    return 'M' + x0 + ',' + y + ' h' + Math.max(w,0) + ' v' + h + ' h' + (-Math.max(w,0)) + ' Z';
+  }
+  return [
+    'M', x0, ',', y,
+    ' L', (x1-r), ',', y,
+    ' A', r, ',', r, ' 0 0 1 ', x1, ',', (y+r),
+    ' L', x1, ',', (y+h-r),
+    ' A', r, ',', r, ' 0 0 1 ', (x1-r), ',', (y+h),
+    ' L', x0, ',', (y+h),
+    ' Z'
+  ].join('');
+}
+var _measureCanvas = document.createElement('canvas').getContext('2d');
+function measureText(text, font){
+  _measureCanvas.font = font;
+  return _measureCanvas.measureText(text).width;
+}
+function truncateToWidth(text, font, maxW){
+  if(measureText(text, font) <= maxW) return text;
+  var t = text;
+  while(t.length > 1 && measureText(t + '…', font) > maxW){
+    t = t.slice(0, -1);
+  }
+  return t + '…';
+}
+
+/* ============================================================
+   SHARED TOOLTIP
+   ============================================================ */
+var tooltipEl = document.getElementById('vizTooltip');
+function showTooltip(x, y, valueHtml, labelText){
+  tooltipEl.innerHTML = '';
+  var v = document.createElement('div'); v.className = 'tt-value'; v.textContent = valueHtml;
+  var l = document.createElement('div'); l.className = 'tt-label'; l.textContent = labelText;
+  tooltipEl.appendChild(v); tooltipEl.appendChild(l);
+  tooltipEl.style.left = x + 'px';
+  tooltipEl.style.top = (y - 10) + 'px';
+  tooltipEl.classList.add('is-visible');
+}
+function hideTooltip(){ tooltipEl.classList.remove('is-visible'); }
+
+/* ============================================================
+   GLOBAL FILTER STATE
+   ============================================================ */
+var filterState = { type:'', status:'', neighborhood:'', search:'' };
+var DETAIL_ROWS = []; // full fetched rows (cleaned)
+var TABLE_PAGE = 0;
+var TABLE_PAGE_SIZE = 25;
+var mapInstance = null;
+var mapMarkersLayer = null;
+var mapReady = false;
+
+function pointInBox(lat, lon, box){
+  return lat >= box.latMin && lat <= box.latMax && lon >= box.lonMin && lon <= box.lonMax;
+}
+
+function applyFilters(rows){
+  return rows.filter(function(r){
+    if(filterState.type && r.sr_type !== filterState.type) return false;
+    if(filterState.status && statusSlug(r.status) !== filterState.status.toLowerCase()) return false;
+    if(filterState.neighborhood){
+      var box = NEIGHBORHOODS[filterState.neighborhood];
+      if(!box || r.lat === null || r.lon === null || !pointInBox(r.lat, r.lon, box)) return false;
+    }
+    if(filterState.search){
+      var q = filterState.search.toLowerCase();
+      var hay = (r.street_address || '').toLowerCase() + ' ' + (r.sr_type || '').toLowerCase();
+      if(hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+}
+
+function refreshFilteredViews(){
+  var filtered = applyFilters(DETAIL_ROWS);
+  TABLE_PAGE = 0;
+  renderTable(filtered);
+  renderMapMarkers(filtered);
+  var countEl = document.getElementById('filterCount');
+  if(countEl) countEl.textContent = fmtInt(filtered.length) + ' of ' + fmtInt(DETAIL_ROWS.length);
+  updateActiveTypeChip();
+}
+
+function updateActiveTypeChip(){
+  var holder = document.getElementById('typesChipHolder');
+  if(!filterState.type){
+    holder.classList.remove('is-visible');
+    holder.innerHTML = '';
+    return;
+  }
+  holder.classList.add('is-visible');
+  holder.innerHTML = '';
+  var wrap = document.createElement('span');
+  wrap.className = 'chip';
+  var txt = document.createElement('span');
+  txt.textContent = 'Filtered to: ' + filterState.type;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.setAttribute('aria-label','Clear type filter');
+  btn.textContent = '×';
+  btn.addEventListener('click', function(){ setTypeFilter(''); });
+  wrap.appendChild(txt); wrap.appendChild(btn);
+  holder.appendChild(wrap);
+}
+
+function setTypeFilter(type){
+  filterState.type = (filterState.type === type) ? '' : type;
+  var sel = document.getElementById('fType');
+  if(sel) sel.value = filterState.type;
+  highlightActiveBars();
+  refreshFilteredViews();
+}
+
+function highlightActiveBars(){
+  document.querySelectorAll('.bar-row[data-type]').forEach(function(row){
+    var t = row.getAttribute('data-type');
+    row.classList.toggle('is-active', filterState.type === t);
+    row.classList.toggle('is-dim', !!filterState.type && filterState.type !== t);
+  });
+}
+
+/* ============================================================
+   MOTION HELPERS (entrances; every one is inert under reduced motion)
+   ============================================================ */
+var ANIM = document.documentElement.classList.contains('anim-ready');
+function reduceMotion(){ return !ANIM; }
+var _entered = {};
+// Run an entrance once per chart; skipped entirely when motion is off or on re-render.
+function chartEntrance(id, fn){
+  if(reduceMotion()) return;
+  if(_entered[id]) return;
+  _entered[id] = true;
+  fn();
+}
+// Fire cb when el is (or scrolls) into view; immediate if already visible or IO is missing.
+function whenVisible(el, cb){
+  if(!('IntersectionObserver' in window)){ cb(); return; }
+  var r = el.getBoundingClientRect();
+  var vh = window.innerHeight || document.documentElement.clientHeight;
+  if(r.bottom > 0 && r.top < vh){ cb(); return; }
+  var io = new IntersectionObserver(function(entries){
+    for(var i=0;i<entries.length;i++){ if(entries[i].isIntersecting){ io.disconnect(); cb(); return; } }
+  }, { threshold: 0.12 });
+  io.observe(el);
+}
+function easeOutCubic(p){ return 1 - Math.pow(1-p, 3); }
+// Count a number up from zero, preserving prefix/suffix (%, commas, decimals) and the exact final string.
+function animateNumber(el, finalStr, dur){
+  if(!el) return;
+  finalStr = String(finalStr);
+  if(reduceMotion()){ el.textContent = finalStr; return; }
+  var m = finalStr.match(/^(\D*?)(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(.*)$/);
+  if(!m){ el.textContent = finalStr; return; }
+  var prefix = m[1] || '', digits = m[2], suffix = m[3] || '';
+  var plain = digits.replace(/,/g,'');
+  var target = parseFloat(plain);
+  if(isNaN(target)){ el.textContent = finalStr; return; }
+  var decimals = plain.indexOf('.') >= 0 ? plain.split('.')[1].length : 0;
+  var useComma = digits.indexOf(',') >= 0 || target >= 1000;
+  dur = dur || 950;
+  function fmt(v){
+    var s = decimals ? v.toFixed(decimals) : String(Math.round(v));
+    if(useComma) s = Number(s).toLocaleString('en-US', { minimumFractionDigits:decimals, maximumFractionDigits:decimals });
+    return prefix + s + suffix;
+  }
+  var t0 = null;
+  function step(ts){
+    if(t0 === null) t0 = ts;
+    var p = clamp((ts - t0)/dur, 0, 1);
+    el.textContent = fmt(target * easeOutCubic(p));
+    if(p < 1) requestAnimationFrame(step); else el.textContent = finalStr;
+  }
+  requestAnimationFrame(step);
+}
+// Horizontal bars grow from the axis, staggered; value labels fade in behind them.
+function playBarsEntrance(container){
+  var bars = container.querySelectorAll('.bar-fill');
+  if(!bars.length) return;
+  var vals = container.querySelectorAll('.bar-value');
+  bars.forEach(function(b){
+    b.style.transformBox = 'fill-box';
+    b.style.transformOrigin = 'left center';
+    b.style.transform = 'scaleX(0)';
+  });
+  vals.forEach(function(v){ v.style.opacity = '0'; });
+  whenVisible(container, function(){
+    bars.forEach(function(b, i){
+      b.style.transition = 'transform .7s cubic-bezier(.22,.61,.36,1) ' + (i*0.055).toFixed(3) + 's, opacity .12s ease, filter .12s ease';
+      b.style.transform = 'scaleX(1)';
+    });
+    vals.forEach(function(v, i){
+      v.style.transition = 'opacity .45s ease ' + (0.25 + i*0.055).toFixed(3) + 's';
+      v.style.opacity = '1';
+    });
+  });
+}
+// Line charts draw across left-to-right (stroke-dashoffset); areas/labels fade in.
+function playLineEntrance(container, lines, areas, fades){
+  lines = lines || []; areas = areas || []; fades = fades || [];
+  var lens = lines.map(function(p){ try{ return p.getTotalLength(); }catch(e){ return 0; } });
+  lines.forEach(function(p, i){
+    var L = lens[i]; if(!L) return;
+    p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+  });
+  areas.forEach(function(a){ if(a){ a._finalOpacity = a.getAttribute('opacity') || '0.1'; a.style.opacity = '0'; } });
+  fades.forEach(function(f){ if(f) f.style.opacity = '0'; });
+  whenVisible(container, function(){
+    lines.forEach(function(p, i){
+      var L = lens[i]; if(!L) return;
+      p.style.transition = 'stroke-dashoffset 1.05s cubic-bezier(.4,0,.2,1) ' + (i*0.18).toFixed(3) + 's';
+      p.style.strokeDashoffset = '0';
+    });
+    areas.forEach(function(a){ if(a){ a.style.transition = 'opacity .8s ease .35s'; a.style.opacity = a._finalOpacity; } });
+    fades.forEach(function(f, i){ if(f){ f.style.transition = 'opacity .5s ease ' + (0.7 + i*0.1).toFixed(3) + 's'; f.style.opacity = '1'; } });
+  });
+}
+// The "getting to done" block: segments widen from zero and the big % counts up.
+function playStatusEntrance(block){
+  var big = block.querySelector('.status-hero .big');
+  var segs = block.querySelectorAll('.status-seg');
+  var finalW = [];
+  segs.forEach(function(s){ finalW.push(s.style.width || '0%'); s.style.width = '0%'; });
+  whenVisible(block, function(){
+    if(big) animateNumber(big, big.textContent.trim(), 1000);
+    segs.forEach(function(s, i){
+      s.style.transition = 'width .8s cubic-bezier(.22,.61,.36,1) ' + (i*0.08).toFixed(3) + 's';
+      s.style.width = finalW[i];
+    });
+  });
+}
+// Reveal sections as they scroll into view; failsafe guarantees they never stay hidden.
+function initSectionReveal(){
+  if(reduceMotion()) return;
+  var items = [].slice.call(document.querySelectorAll('.wrap > section, .wrap > .masthead'));
+  if(!items.length) return;
+  if(!('IntersectionObserver' in window)){ items.forEach(function(el){ el.classList.add('is-revealed'); }); return; }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('is-revealed'); io.unobserve(en.target); } });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  items.forEach(function(el){ io.observe(el); });
+  // Safety net: never leave on-screen content hidden if the observer misfires.
+  // Below-fold sections are left to the observer so they still reveal on scroll.
+  setTimeout(function(){
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    items.forEach(function(el){
+      var r = el.getBoundingClientRect();
+      if(r.top < vh && r.bottom > 0){ el.classList.add('is-revealed'); io.unobserve(el); }
+    });
+  }, 1200);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', function(){
+  initThemeToggle();
+  initFilterControls();
+  initDetailPanel();
+  initBlockLookup();
+  initSectionReveal();
+  loadAll();
+});
+
+function initThemeToggle(){
+  var root = document.documentElement;
+  var saved = null;
+  try{ saved = localStorage.getItem('ward42_theme'); }catch(e){}
+  if(saved === 'dark' || saved === 'light') root.setAttribute('data-theme', saved);
+  document.getElementById('themeToggle').addEventListener('click', function(){
+    var cur = root.getAttribute('data-theme');
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var isDark = cur ? cur === 'dark' : prefersDark;
+    var next = isDark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try{ localStorage.setItem('ward42_theme', next); }catch(e){}
+    refreshColors();
+    rerenderAllCharts();
+  });
+}
+
+var _lastData = { status:null, monthly:null, topTypes:null, resolution:null, cmpWard:null, cmpCity:null, wardRank:null, potWard:null, potCity:null };
+function rerenderAllCharts(){
+  if(_lastData.topTypes) renderTypesChart(_lastData.topTypes);
+  if(_lastData.resolution) renderResolutionChart(_lastData.resolution);
+  if(_lastData.status) renderStatusBlock(_lastData.status);
+  if(_lastData.monthly) renderTrendChart(_lastData.monthly);
+  if(_lastData.cmpWard && _lastData.cmpCity) renderCompareChart(_lastData.cmpWard, _lastData.cmpCity);
+  if(_lastData.potWard && _lastData.potCity) renderPotholeCompare(_lastData.potWard, _lastData.potCity);
+}
+
+function initFilterControls(){
+  document.getElementById('fType').addEventListener('change', function(e){
+    filterState.type = e.target.value;
+    highlightActiveBars();
+    refreshFilteredViews();
+  });
+  document.getElementById('fNeighborhood').addEventListener('change', function(e){
+    filterState.neighborhood = e.target.value;
+    refreshFilteredViews();
+  });
+  var searchDebounce;
+  document.getElementById('fSearch').addEventListener('input', function(e){
+    clearTimeout(searchDebounce);
+    var val = e.target.value;
+    searchDebounce = setTimeout(function(){ filterState.search = val; refreshFilteredViews(); }, 180);
+  });
+  document.querySelectorAll('#statusToggle button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#statusToggle button').forEach(function(b){ b.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+      filterState.status = btn.getAttribute('data-status');
+      refreshFilteredViews();
+    });
+  });
+  document.getElementById('filterReset').addEventListener('click', function(){
+    filterState = { type:'', status:'', neighborhood:'', search:'' };
+    document.getElementById('fType').value = '';
+    document.getElementById('fNeighborhood').value = '';
+    document.getElementById('fSearch').value = '';
+    document.querySelectorAll('#statusToggle button').forEach(function(b){ b.classList.remove('is-active'); });
+    document.querySelector('#statusToggle button[data-status=""]').classList.add('is-active');
+    highlightActiveBars();
+    refreshFilteredViews();
+  });
+
+  // populate neighborhood dropdown
+  var nSel = document.getElementById('fNeighborhood');
+  Object.keys(NEIGHBORHOODS).forEach(function(name){
+    var opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    nSel.appendChild(opt);
+  });
+
+  document.getElementById('pagePrev').addEventListener('click', function(){
+    if(TABLE_PAGE > 0){ TABLE_PAGE--; renderTable(applyFilters(DETAIL_ROWS)); }
+  });
+  document.getElementById('pageNext').addEventListener('click', function(){
+    TABLE_PAGE++; renderTable(applyFilters(DETAIL_ROWS));
+  });
+}
+
+function initDetailPanel(){
+  document.getElementById('detailClose').addEventListener('click', closeDetailPanel);
+  document.getElementById('detailBackdrop').addEventListener('click', function(e){
+    if(e.target === this) closeDetailPanel();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeDetailPanel();
+  });
+}
+function closeDetailPanel(){
+  document.getElementById('detailBackdrop').classList.remove('is-open');
+}
+function openDetailPanel(row){
+  var slug = statusSlug(row.status);
+  track('view_request', { sr_type: row.sr_type });
+  document.getElementById('detailTitle').textContent = row.sr_type || 'Service Request';
+  document.getElementById('detailSub').textContent = row.sr_number ? ('Record ' + row.sr_number) : '';
+
+  var days = null;
+  if(slug === 'completed') days = daysBetween(row.last_modified_date, row.created_date);
+
+  var grid = document.getElementById('detailGrid');
+  grid.innerHTML = '';
+  function addRow(label, valueText){
+    var dt = document.createElement('dt'); dt.textContent = label;
+    var dd = document.createElement('dd'); dd.textContent = valueText;
+    grid.appendChild(dt); grid.appendChild(dd);
+  }
+  addRow('Address', row.street_address || 'Not on file');
+  addRow('Status', row.status || 'Unknown');
+  addRow('Department', row.owner_department || 'Not specified');
+  addRow('Filed', fmtDateLong(row.created_date));
+  addRow('Last update', fmtDateLong(row.last_modified_date));
+  if(slug === 'completed'){
+    addRow('Est. days to resolve', days !== null ? (fmtDays(days) + ' days (estimated)') : '—');
+  } else if(slug === 'open'){
+    var elapsed = daysBetween(NOW.toISOString(), row.created_date);
+    addRow('Elapsed so far', elapsed !== null ? (fmtDays(elapsed) + ' days, still open') : '—');
+  }
+
+  var links = document.getElementById('detailLinks');
+  links.innerHTML = '';
+  var a1 = document.createElement('a');
+  a1.href = 'https://311.chicago.gov/'; a1.target = '_blank'; a1.rel = 'noopener';
+  a1.textContent = 'Report or check a request at 311.chicago.gov ↗';
+  links.appendChild(a1);
+  if(row.sr_number){
+    var a2 = document.createElement('a');
+    a2.href = 'https://data.cityofchicago.org/resource/v6vf-nfxy.json?sr_number=' + encodeURIComponent(row.sr_number);
+    a2.target = '_blank'; a2.rel = 'noopener';
+    a2.textContent = 'View open-data record ↗';
+    links.appendChild(a2);
+  }
+
+  document.getElementById('detailBackdrop').classList.add('is-open');
+}
+
+/* ============================================================
+   LOAD ALL DATA
+   ============================================================ */
+function loadAll(){
+  fetchJSON(URLS.status).then(function(data){
+    _lastData.status = data;
+    renderStatusBlock(data);
+    renderLedeAndFigures();
+  }).catch(function(err){ showSectionError('statusError', 'status breakdown'); });
+
+  fetchJSON(URLS.monthly).then(function(data){
+    _lastData.monthly = data;
+    renderTrendChart(data);
+  }).catch(function(err){ showSectionError('trendError', 'monthly trend'); });
+
+  fetchJSON(URLS.topTypes).then(function(data){
+    _lastData.topTypes = data;
+    renderTypesChart(data);
+    populateTypeDropdown(data);
+    renderLedeAndFigures();
+  }).catch(function(err){ showSectionError('typesError', 'request types'); });
+
+  fetchJSON(URLS.resolution).then(function(data){
+    _lastData.resolution = data;
+    renderResolutionChart(data);
+    renderLedeAndFigures();
+  }).catch(function(err){ showSectionError('resError', 'resolution time'); });
+
+  Promise.all([fetchJSON(URLS.cmpWard), fetchJSON(URLS.cmpCity)]).then(function(res){
+    _lastData.cmpWard = res[0]; _lastData.cmpCity = res[1];
+    renderCompareChart(res[0], res[1]);
+  }).catch(function(err){ showSectionError('cmpError', 'ward comparison'); });
+
+  fetchJSON(URLS.wardRank).then(function(data){
+    _lastData.wardRank = data;
+    renderRank(data);
+  }).catch(function(err){});
+
+  Promise.all([fetchJSON(URLS.potWard), fetchJSON(URLS.potCity)]).then(function(res){
+    _lastData.potWard = res[0]; _lastData.potCity = res[1];
+    renderPotholeCompare(res[0], res[1]);
+  }).catch(function(err){ showSectionError('potError', 'pothole comparison'); });
+
+  Promise.all([fetchJSON(URLS.weekTotal), fetchJSON(URLS.weekWithin)]).then(function(res){
+    renderWeekStat(res[0], res[1]);
+  }).catch(function(err){});
+
+  fetchJSON(URLS.detail).then(function(rows){
+    var cleaned = cleanDetailRows(rows);
+    DETAIL_ROWS = cleaned;
+    try{
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rows));
+      localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+    }catch(e){}
+    refreshFilteredViews();
+    initMap();
+  }).catch(function(err){
+    // fall back to cache
+    var cached = null;
+    try{
+      var raw = localStorage.getItem(CACHE_KEY);
+      if(raw) cached = JSON.parse(raw);
+    }catch(e){}
+    if(cached && cached.length){
+      DETAIL_ROWS = cleanDetailRows(cached);
+      document.getElementById('cacheBanner').classList.add('is-visible');
+      refreshFilteredViews();
+      initMap();
+    } else {
+      showSectionError('mapError', 'map & table data');
+      showSectionError('tableError', 'map & table data');
+    }
+  });
+}
+
+function showSectionError(id, label){
+  var el = document.getElementById(id);
+  if(!el) return;
+  el.classList.add('is-visible');
+  el.innerHTML = '<strong>Couldn’t load ' + escapeHtml(label) + ' from the live feed.</strong> The rest of the page still works, so try refreshing in a moment.';
+}
+
+function cleanDetailRows(rows){
+  return rows.map(function(r){
+    return {
+      sr_number: r.sr_number || null,
+      sr_type: r.sr_type || 'Unspecified',
+      status: r.status || 'Unknown',
+      owner_department: r.owner_department || null,
+      street_address: r.street_address || null,
+      created_date: r.created_date || null,
+      last_modified_date: r.last_modified_date || null,
+      lat: parseNum(r.latitude),
+      lon: parseNum(r.longitude)
+    };
+  }).filter(function(r){ return !!r.created_date; });
+}
+
+function populateTypeDropdown(topTypesData){
+  var sel = document.getElementById('fType');
+  // keep first "All" option
+  while(sel.options.length > 1) sel.remove(1);
+  topTypesData.forEach(function(d){
+    var opt = document.createElement('option');
+    opt.value = d.sr_type; opt.textContent = d.sr_type;
+    sel.appendChild(opt);
+  });
+}
+
+/* ============================================================
+   LEDE + HERO FIGURES  (needs status + topTypes + resolution)
+   ============================================================ */
+var _ledeRendered = false;
+function renderLedeAndFigures(){
+  if(_ledeRendered) return;
+  if(!_lastData.status || !_lastData.topTypes || !_lastData.resolution) return;
+  _ledeRendered = true;
+
+  var statusMap = {};
+  var total = 0;
+  _lastData.status.forEach(function(d){ statusMap[d.status] = parseInt(d.n,10); total += parseInt(d.n,10); });
+  var completed = statusMap['Completed'] || 0;
+  var pctResolved = total ? (completed/total*100) : 0;
+
+  // meaningful resolution types = avg_days > 0.05 (exclude auto-closed same-instant types)
+  var meaningful = _lastData.resolution.filter(function(d){ return parseFloat(d.avg_days) > 0.05 && parseInt(d.n,10) >= 20; });
+  meaningful.sort(function(a,b){ return parseFloat(a.avg_days) - parseFloat(b.avg_days); });
+  var fastest = meaningful[0];
+
+  var potholeRow = _lastData.resolution.filter(function(d){ return /pothole/i.test(d.sr_type); })[0];
+
+  var startMonthLabel = MONTH_NAMES[START_12MO.getMonth()] + ' ' + START_12MO.getFullYear();
+
+  function narrativeDays(n){
+    if(n < 0.75) return 'within a day';
+    if(n < 1.5) return 'within about a day';
+    return 'within about ' + fmtDays(n) + ' days';
+  }
+
+  var ledeText = 'Since ' + startMonthLabel + ', residents of the 42nd Ward have filed about ' +
+    fmtInt(total) + ' requests for city services. About ' + Math.round(pctResolved) + '% have been resolved.';
+  if(fastest){
+    ledeText += ' ' + shortTypeLabel(fastest.sr_type) + ' is typically handled ' + narrativeDays(parseFloat(fastest.avg_days)) + ',';
+  }
+  if(potholeRow){
+    ledeText += ' and potholes ' + narrativeDays(parseFloat(potholeRow.avg_days)) + '.';
+  } else {
+    ledeText = ledeText.replace(/,$/, '.');
+  }
+
+  document.getElementById('ledeText').textContent = ledeText;
+  document.getElementById('ledeAsOf').textContent = 'Figures reflect the trailing 12 months as of ' + fmtDateLong(NOW.toISOString()) + '.';
+
+  // hero figures
+  var weightedSum = 0, weightedN = 0;
+  meaningful.forEach(function(d){ weightedSum += parseFloat(d.avg_days)*parseInt(d.n,10); weightedN += parseInt(d.n,10); });
+  var typicalDays = weightedN ? (weightedSum/weightedN) : null;
+
+  var figuresGrid = document.getElementById('figuresGrid');
+  figuresGrid.innerHTML = '';
+  var figs = [
+    { value: fmtInt(total), unit:'', cap:'Requests filed by residents in the past 12 months' },
+    { value: Math.round(pctResolved) + '%', unit:'', cap:'Share of those requests marked resolved' },
+    { value: typicalDays !== null ? fmtDays(typicalDays) : '—', unit:'days*', cap:'Typical estimated time to close a request' },
+    { value: fastest ? fmtDays(parseFloat(fastest.avg_days)) : '—', unit: fastest ? 'days*' : '', cap: fastest ? (shortTypeLabel(fastest.sr_type) + ', the fastest common fix') : 'Fastest common fix' }
+  ];
+  figs.forEach(function(f){
+    var div = document.createElement('div');
+    div.className = 'figure';
+    var val = document.createElement('span');
+    val.className = 'fig-value mono';
+    var num = document.createElement('span');
+    num.className = 'fig-num';
+    num.textContent = f.value;
+    val.appendChild(num);
+    if(f.unit){ var u = document.createElement('span'); u.className='unit'; u.textContent=' '+f.unit; val.appendChild(u); }
+    var cap = document.createElement('div');
+    cap.className = 'fig-cap';
+    cap.textContent = f.cap;
+    div.appendChild(val); div.appendChild(cap);
+    figuresGrid.appendChild(div);
+  });
+
+  chartEntrance('figuresGrid', function(){
+    whenVisible(figuresGrid, function(){
+      figuresGrid.querySelectorAll('.fig-num').forEach(function(n){ animateNumber(n, n.textContent, 950); });
+    });
+  });
+}
+function shortTypeLabel(t){
+  if(!t) return 'Requests';
+  return t.replace(/ Complaint$/,'').replace(/ Request$/,'');
+}
+
+/* ============================================================
+   WEEK-RESOLUTION STAT (text only, plugged into the "Getting to done" copy)
+   ============================================================ */
+function renderWeekStat(totalData, withinData){
+  var el = document.getElementById('weekStatLine');
+  if(!el) return;
+  var total = (totalData && totalData[0]) ? parseInt(totalData[0].n,10) : 0;
+  var within = (withinData && withinData[0]) ? parseInt(withinData[0].n,10) : 0;
+  if(!total || isNaN(total) || isNaN(within)){ el.textContent = ''; return; }
+  var pct = Math.round((within/total)*100);
+  el.textContent = 'About ' + pct + '% of requests are resolved within a week.';
+}
+
+/* ============================================================
+   CHART: WHAT RESIDENTS ASK FOR (top types, single-hue horizontal bars)
+   ============================================================ */
+function renderTypesChart(data){
+  var container = document.getElementById('typesChart');
+  container.innerHTML = '';
+  if(!data || !data.length){ container.innerHTML = '<p class="chart-note">No data available.</p>'; return; }
+
+  var rows = data.map(function(d){ return { type:d.sr_type, n:parseInt(d.n,10) }; });
+  rows.sort(function(a,b){ return b.n - a.n; });
+
+  var width = Math.max(container.clientWidth, 320);
+  var labelW = width < 520 ? 130 : 230;
+  var rowH = 40, barH = 20, gap = 4;
+  var plotW = width - labelW - 70;
+  var height = rows.length * rowH + 20;
+  var maxN = Math.max.apply(null, rows.map(function(r){ return r.n; }));
+
+  var svg = svgEl('svg', { viewBox: '0 0 ' + width + ' ' + height, role:'img', 'aria-label':'Top request types by volume' });
+
+  rows.forEach(function(r, i){
+    var y = 10 + i*rowH;
+    var barY = y + (rowH-barH)/2 - 4;
+    var w = plotW * (r.n / maxN);
+    var g = svgEl('g', { class:'bar-row', 'data-type': r.type, tabindex:'0', role:'button', 'aria-label': r.type + ': ' + fmtInt(r.n) + ' requests' });
+
+    var labelFont = '13px "IBM Plex Sans", sans-serif';
+    var labelText = truncateToWidth(r.type, labelFont, labelW - 14);
+    var label = svgEl('text', { x:0, y: barY + barH/2, 'dominant-baseline':'middle', class:'bar-label' });
+    label.textContent = labelText;
+    if(labelText !== r.type){
+      var titleEl = svgEl('title', {}); titleEl.textContent = r.type; label.appendChild(titleEl);
+    }
+
+    var rect = svgEl('path', { d: roundedBarPath(labelW, barY, w, barH, 4), fill: COLOR.blue, class:'bar-fill' });
+
+    var valLabel = svgEl('text', { x: labelW + w + 10, y: barY + barH/2, 'dominant-baseline':'middle', class:'bar-value' });
+    valLabel.textContent = fmtInt(r.n);
+
+    g.appendChild(label); g.appendChild(rect); g.appendChild(valLabel);
+
+    function activate(){ setTypeFilter(r.type); }
+    g.addEventListener('click', activate);
+    g.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); activate(); } });
+    g.addEventListener('pointerenter', function(e){ showTooltip(e.clientX, e.clientY, fmtInt(r.n) + ' requests', r.type); g.classList.add('is-hover'); });
+    g.addEventListener('pointermove', function(e){ showTooltip(e.clientX, e.clientY, fmtInt(r.n) + ' requests', r.type); });
+    g.addEventListener('pointerleave', function(){ hideTooltip(); g.classList.remove('is-hover'); });
+    g.addEventListener('focus', function(e){ var rc = rect.getBoundingClientRect(); showTooltip(rc.right, rc.top, fmtInt(r.n)+' requests', r.type); });
+    g.addEventListener('blur', hideTooltip);
+
+    svg.appendChild(g);
+  });
+
+  container.appendChild(svg);
+  var note = document.createElement('p');
+  note.className = 'chart-note';
+  note.textContent = 'Top ' + rows.length + ' request types by volume, trailing 12 months. Click a bar to filter the map and table.';
+  container.appendChild(note);
+  highlightActiveBars();
+  chartEntrance('typesChart', function(){ playBarsEntrance(container); });
+}
+
+/* ============================================================
+   CHART: HOW FAST IT GETS FIXED (resolution time, single-hue)
+   ============================================================ */
+function renderResolutionChart(data){
+  var container = document.getElementById('resChart');
+  var calloutEl = document.getElementById('resCallout');
+  container.innerHTML = '';
+  if(!data || !data.length){ container.innerHTML = '<p class="chart-note">No data available.</p>'; return; }
+
+  var rows = data.map(function(d){ return { type:d.sr_type, avg:parseFloat(d.avg_days), n:parseInt(d.n,10) }; })
+    .filter(function(r){ return r.n >= 10; }) // ignore tiny samples
+    .slice(0, 8);
+
+  var meaningfulRows = rows.filter(function(r){ return r.avg > 0.05; });
+  var zeroRows = rows.filter(function(r){ return r.avg <= 0.05; });
+  meaningfulRows.sort(function(a,b){ return a.avg - b.avg; });
+  var plotRows = meaningfulRows.concat(zeroRows);
+
+  var width = Math.max(container.clientWidth, 320);
+  var labelW = width < 520 ? 130 : 230;
+  var rowH = 40, barH = 20;
+  var plotW = width - labelW - 76;
+  var height = plotRows.length * rowH + 20;
+  var maxAvg = Math.max.apply(null, meaningfulRows.map(function(r){ return r.avg; }).concat([1]));
+
+  var svg = svgEl('svg', { viewBox: '0 0 ' + width + ' ' + height, role:'img', 'aria-label':'Average days to resolve by request type' });
+
+  var outlierNote = null;
+
+  plotRows.forEach(function(r, i){
+    var y = 10 + i*rowH;
+    var barY = y + (rowH-barH)/2 - 4;
+    var isZero = r.avg <= 0.05;
+    var w = isZero ? 3 : Math.max(plotW * (r.avg / maxAvg), 6);
+    var isOutlier = !isZero && r.avg > maxAvg*0.6 && r.avg > 20;
+    if(isOutlier) outlierNote = r;
+
+    var g = svgEl('g', { class:'bar-row', tabindex:'0', role:'img', 'aria-label': r.type + (isZero ? ': logged and closed same day' : (': about ' + fmtDays(r.avg) + ' days')) });
+
+    var labelFont = '13px "IBM Plex Sans", sans-serif';
+    var labelText = truncateToWidth(r.type, labelFont, labelW - 14);
+    var label = svgEl('text', { x:0, y: barY + barH/2, 'dominant-baseline':'middle', class:'bar-label' });
+    label.textContent = labelText;
+    if(labelText !== r.type){ var t1 = svgEl('title',{}); t1.textContent = r.type; label.appendChild(t1); }
+
+    var rect = svgEl('path', { d: roundedBarPath(labelW, barY, w, barH, 4), fill: isZero ? COLOR.hairline : COLOR.blue, class:'bar-fill' });
+
+    var valText = isZero ? 'same day †' : ('~' + fmtDays(r.avg) + (fmtDays(r.avg)==='1'?' day':' days'));
+    var valLabel = svgEl('text', { x: labelW + w + 10, y: barY + barH/2, 'dominant-baseline':'middle', class:'bar-value' });
+    valLabel.textContent = valText;
+
+    g.appendChild(label); g.appendChild(rect); g.appendChild(valLabel);
+
+    var tipVal = isZero ? 'Same-day (auto-closed)' : ('~' + fmtDays(r.avg) + ' days');
+    g.addEventListener('pointerenter', function(e){ showTooltip(e.clientX, e.clientY, tipVal, r.type + ' · n=' + fmtInt(r.n)); });
+    g.addEventListener('pointermove', function(e){ showTooltip(e.clientX, e.clientY, tipVal, r.type + ' · n=' + fmtInt(r.n)); });
+    g.addEventListener('pointerleave', hideTooltip);
+    g.addEventListener('focus', function(e){ var rc = rect.getBoundingClientRect(); showTooltip(rc.right, rc.top, tipVal, r.type); });
+    g.addEventListener('blur', hideTooltip);
+
+    svg.appendChild(g);
+  });
+
+  container.appendChild(svg);
+
+  var note = document.createElement('p');
+  note.className = 'chart-note';
+  var noteTxt = 'Estimated from last-update timestamps, completed requests only, trailing 12 months.';
+  if(zeroRows.length){ noteTxt += ' † Types marked "same day" are logged and closed on receipt (e.g. informational calls) and aren’t a meaningful repair-time signal.'; }
+  note.textContent = noteTxt;
+  container.appendChild(note);
+
+  if(outlierNote){
+    calloutEl.style.display = 'block';
+    calloutEl.innerHTML = '<b>' + escapeHtml(outlierNote.type) + '</b> stands out at roughly ' + fmtDays(outlierNote.avg) + ' days, well above the other high-volume categories. That likely reflects a multi-step review or feedback process rather than a street-repair backlog.';
+  } else {
+    calloutEl.style.display = 'none';
+  }
+  chartEntrance('resChart', function(){ playBarsEntrance(container); });
+}
+
+/* ============================================================
+   GETTING TO DONE (status stacked bar)
+   ============================================================ */
+function renderStatusBlock(data){
+  var block = document.getElementById('statusBlock');
+  block.innerHTML = '';
+  if(!data || !data.length){ block.innerHTML = '<p class="chart-note">No data available.</p>'; return; }
+
+  var map = {}; var total = 0;
+  data.forEach(function(d){ map[d.status] = parseInt(d.n,10); total += parseInt(d.n,10); });
+  var completed = map['Completed'] || 0, open = map['Open'] || 0, canceled = map['Canceled'] || 0;
+  var pctCompleted = total ? completed/total*100 : 0;
+  var pctOpen = total ? open/total*100 : 0;
+  var pctCanceled = total ? canceled/total*100 : 0;
+
+  var hero = document.createElement('div');
+  hero.className = 'status-hero';
+  hero.innerHTML = '<span class="big mono">' + Math.round(pctCompleted) + '%</span>' +
+    '<span class="big-cap">of requests filed in the past 12 months were marked resolved.</span>';
+  block.appendChild(hero);
+
+  var stack = document.createElement('div');
+  stack.className = 'status-stack';
+  stack.setAttribute('role','img');
+  stack.setAttribute('aria-label', Math.round(pctCompleted)+'% completed, '+Math.round(pctOpen)+'% open, '+Math.round(pctCanceled)+'% canceled');
+
+  function seg(pct, color, label){
+    var d = document.createElement('div');
+    d.className = 'status-seg';
+    d.style.width = Math.max(pct,0.3) + '%';
+    d.style.background = color;
+    d.style.borderRight = '2px solid var(--surface)';
+    d.addEventListener('pointerenter', function(e){ showTooltip(e.clientX, e.clientY, Math.round(pct)+'%', label); });
+    d.addEventListener('pointermove', function(e){ showTooltip(e.clientX, e.clientY, Math.round(pct)+'%', label); });
+    d.addEventListener('pointerleave', hideTooltip);
+    return d;
+  }
+  var s1 = seg(pctCompleted, COLOR.good, 'Completed'); s1.style.borderRadius = '4px 0 0 4px';
+  var s2 = seg(pctOpen, COLOR.warn, 'Open');
+  var s3 = seg(pctCanceled, COLOR.canceled, 'Canceled'); s3.style.borderRight = 'none'; s3.style.borderRadius='0 4px 4px 0';
+  stack.appendChild(s1); stack.appendChild(s2); stack.appendChild(s3);
+  block.appendChild(stack);
+
+  var legend = document.createElement('div');
+  legend.className = 'status-legend';
+  function legItem(color, label, n, pct){
+    var it = document.createElement('div'); it.className = 'item';
+    it.innerHTML = '<span class="sw" style="background:'+color+'"></span><span><strong class="mono">'+fmtInt(n)+'</strong> '+label+' (' + Math.round(pct) + '%)</span>';
+    return it;
+  }
+  legend.appendChild(legItem(COLOR.good, 'Completed', completed, pctCompleted));
+  legend.appendChild(legItem(COLOR.warn, 'Open', open, pctOpen));
+  legend.appendChild(legItem(COLOR.canceled, 'Canceled', canceled, pctCanceled));
+  block.appendChild(legend);
+  chartEntrance('statusBlock', function(){ playStatusEntrance(block); });
+}
+
+/* ============================================================
+   TREND CHART (line/area, crosshair tooltip)
+   ============================================================ */
+function renderTrendChart(data){
+  var container = document.getElementById('trendChart');
+  container.innerHTML = '';
+  if(!data || !data.length){ container.innerHTML = '<p class="chart-note">No data available.</p>'; return; }
+
+  var points = data.map(function(d){
+    return { y: parseInt(d.y,10), m: parseInt(d.m,10), n: parseInt(d.n,10) };
+  });
+  // mark last point partial if it's the current month
+  var lastPt = points[points.length-1];
+  var isPartial = lastPt.y === NOW.getFullYear() && lastPt.m === (NOW.getMonth()+1);
+
+  var width = Math.max(container.clientWidth, 320);
+  var height = 260;
+  var padL = 46, padR = 16, padT = 16, padB = 34;
+  var plotW = width - padL - padR, plotH = height - padT - padB;
+
+  var maxN = Math.max.apply(null, points.map(function(p){ return p.n; }));
+  var niceMax = Math.ceil(maxN/200)*200 || 200;
+
+  function xFor(i){ return padL + (plotW * i / (points.length-1)); }
+  function yFor(n){ return padT + plotH - (plotH * n / niceMax); }
+
+  var svg = svgEl('svg', { viewBox:'0 0 '+width+' '+height, role:'img', 'aria-label':'Monthly request volume over 24 months' });
+
+  // gridlines (0, 1/2, max)
+  [0, 0.5, 1].forEach(function(f){
+    var yy = padT + plotH*(1-f);
+    var line = svgEl('line', { x1:padL, x2:width-padR, y1:yy, y2:yy, class:'gridline' });
+    svg.appendChild(line);
+    var tick = svgEl('text', { x: padL-8, y: yy, 'text-anchor':'end', 'dominant-baseline':'middle', class:'axis-tick' });
+    tick.textContent = fmtInt(niceMax*f);
+    svg.appendChild(tick);
+  });
+
+  // x-axis month labels (every ~4 months to avoid clutter, plus first/last)
+  points.forEach(function(p, i){
+    var showLabel = (i % 4 === 0) || i === points.length-1;
+    if(!showLabel) return;
+    var tick = svgEl('text', { x:xFor(i), y:height-10, 'text-anchor':'middle', class:'axis-tick' });
+    tick.textContent = MONTH_ABBR[p.m-1] + " '" + String(p.y).slice(2);
+    svg.appendChild(tick);
+  });
+
+  // area path
+  var areaD = 'M' + xFor(0) + ',' + yFor(0);
+  points.forEach(function(p,i){ areaD += ' L' + xFor(i) + ',' + yFor(p.n); });
+  areaD += ' L' + xFor(points.length-1) + ',' + yFor(0) + ' Z';
+  var area = svgEl('path', { d:areaD, fill:COLOR.blue, opacity:'0.1', stroke:'none' });
+  svg.appendChild(area);
+
+  // line path (solid up to second-to-last, dashed for partial final segment)
+  var solidPts = isPartial ? points.slice(0,-1) : points;
+  var lineD = '';
+  solidPts.forEach(function(p,i){ lineD += (i===0?'M':'L') + xFor(i) + ',' + yFor(p.n); });
+  var line = svgEl('path', { d:lineD, fill:'none', stroke:COLOR.blue, 'stroke-width':'2', 'stroke-linejoin':'round', 'stroke-linecap':'round' });
+  svg.appendChild(line);
+
+  if(isPartial && points.length > 1){
+    var n2 = points.length-2, n1 = points.length-1;
+    var dash = svgEl('path', { d:'M'+xFor(n2)+','+yFor(points[n2].n)+' L'+xFor(n1)+','+yFor(points[n1].n), fill:'none', stroke:COLOR.blue, 'stroke-width':'2', 'stroke-dasharray':'4 4', 'stroke-linecap':'round' });
+    svg.appendChild(dash);
+  }
+
+  // end label (most recent full month or partial)
+  var lastFull = isPartial ? points[points.length-2] : points[points.length-1];
+  if(lastFull){
+    var idx = isPartial ? points.length-2 : points.length-1;
+    var lbl = svgEl('text', { x:xFor(idx), y:yFor(lastFull.n)-10, 'text-anchor':'end', class:'bar-value' });
+    lbl.textContent = fmtInt(lastFull.n);
+    svg.appendChild(lbl);
+  }
+
+  // dots (invisible hit targets + visible on hover) + crosshair
+  var crosshair = svgEl('line', { x1:0, x2:0, y1:padT, y2:padT+plotH, stroke:COLOR.inkMuted, 'stroke-width':'1', opacity:'0' });
+  svg.appendChild(crosshair);
+  var hoverDot = svgEl('circle', { r:'5', fill:COLOR.blue, stroke:COLOR.surface2, 'stroke-width':'2', opacity:'0' });
+  svg.appendChild(hoverDot);
+
+  var hitLayer = svgEl('rect', { x:padL, y:padT, width:plotW, height:plotH, fill:'transparent', style:'cursor:crosshair;' });
+  svg.appendChild(hitLayer);
+
+  function nearestIndex(mouseX){
+    var idx = Math.round(((mouseX-padL)/plotW) * (points.length-1));
+    return clamp(idx, 0, points.length-1);
+  }
+  hitLayer.addEventListener('pointermove', function(e){
+    var rect = svg.getBoundingClientRect();
+    var scaleX = width / rect.width;
+    var mouseX = (e.clientX - rect.left) * scaleX;
+    var i = nearestIndex(mouseX);
+    var p = points[i];
+    var xx = xFor(i);
+    crosshair.setAttribute('x1', xx); crosshair.setAttribute('x2', xx); crosshair.setAttribute('opacity','1');
+    hoverDot.setAttribute('cx', xx); hoverDot.setAttribute('cy', yFor(p.n)); hoverDot.setAttribute('opacity','1');
+    var monthLabel = MONTH_NAMES[p.m-1] + ' ' + p.y + (i===points.length-1 && isPartial ? ' (month in progress)' : '');
+    showTooltip(e.clientX, e.clientY, fmtInt(p.n) + ' requests', monthLabel);
+  });
+  hitLayer.addEventListener('pointerleave', function(){
+    crosshair.setAttribute('opacity','0'); hoverDot.setAttribute('opacity','0'); hideTooltip();
+  });
+
+  container.appendChild(svg);
+  var note = document.createElement('p');
+  note.className = 'chart-note';
+  note.textContent = 'Volume has held in a steady band across ' + points.length + ' months' + (isPartial ? '; the final month (dashed) is still in progress.' : '.');
+  container.appendChild(note);
+  chartEntrance('trendChart', function(){
+    playLineEntrance(container, [line], [area], [ (typeof dash !== 'undefined' ? dash : null), (typeof lbl !== 'undefined' ? lbl : null) ]);
+  });
+}
+
+/* ============================================================
+   BENCHMARK: rank, per-type comparison, pothole-over-time
+   ============================================================ */
+function ordinal(n){ var s=['th','st','nd','rd'], v=n%100; return n + (s[(v-20)%10] || s[v] || s[0]); }
+
+function renderRank(data){
+  var el = document.getElementById('rankLine');
+  if(!el || !data || !data.length) return;
+  var sorted = data.slice().sort(function(a,b){ return parseFloat(a.d) - parseFloat(b.d); });
+  var total = sorted.length, idx = -1, dval = null;
+  for(var i=0;i<sorted.length;i++){ if(String(sorted[i].ward) === String(WARD)){ idx = i; dval = parseFloat(sorted[i].d); break; } }
+  if(idx < 0) return;
+  el.textContent = 'It ranks ' + ordinal(idx+1) + ' of ' + total + ' wards on average time to close a request, at about ' + fmtDays(dval) + ' days.';
+}
+
+function renderCompareChart(wardData, cityData){
+  var container = document.getElementById('cmpChart');
+  container.innerHTML = '';
+  if(!wardData || !cityData){ container.innerHTML = '<p class="chart-note">No data available.</p>'; return; }
+  var order = ['Pothole in Street Complaint','Graffiti Removal Request','Traffic Signal Out Complaint','Street Light Out Complaint'];
+  var labels = { 'Pothole in Street Complaint':'Potholes', 'Graffiti Removal Request':'Graffiti', 'Traffic Signal Out Complaint':'Traffic signals', 'Street Light Out Complaint':'Street lights' };
+  function look(arr, t){ for(var i=0;i<arr.length;i++){ if(arr[i].sr_type === t) return parseFloat(arr[i].avg_days); } return null; }
+  var rows = order.map(function(t){ return { type:t, label:labels[t], ward:look(wardData,t), city:look(cityData,t) }; })
+    .filter(function(r){ return r.ward !== null && r.city !== null && !isNaN(r.ward) && !isNaN(r.city); });
+  if(!rows.length){ container.innerHTML = '<p class="chart-note">No data available.</p>'; return; }
+
+  var width = Math.max(container.clientWidth, 320);
+  var labelW = width < 520 ? 92 : 140;
+  var rowH = 58, barH = 15, barGap = 7;
+  var plotW = width - labelW - 96;
+  var height = rows.length * rowH + 20;
+  var maxVal = Math.max.apply(null, rows.map(function(r){ return Math.max(r.ward, r.city); }).concat([1]));
+
+  var svg = svgEl('svg', { viewBox:'0 0 '+width+' '+height, role:'img', 'aria-label':'42nd Ward versus citywide resolution days by request type' });
+
+  rows.forEach(function(r, i){
+    var y = 12 + i*rowH;
+    var label = svgEl('text', { x:0, y: y + barH + Math.round(barGap/2), 'dominant-baseline':'middle', class:'bar-label' });
+    label.textContent = r.label;
+    svg.appendChild(label);
+    function bar(val, color, yy, who){
+      var w = Math.max(plotW * (val/maxVal), 4);
+      var g = svgEl('g', { class:'bar-row', tabindex:'0', role:'img', 'aria-label': who + ' ' + r.label + ': about ' + fmtDays(val) + ' days' });
+      var rect = svgEl('path', { d: roundedBarPath(labelW, yy, w, barH, 4), fill: color, class:'bar-fill' });
+      var v = svgEl('text', { x: labelW + w + 8, y: yy + barH/2, 'dominant-baseline':'middle', class:'bar-value' });
+      v.textContent = '~' + fmtDays(val) + (fmtDays(val) === '1' ? ' day' : ' days');
+      g.appendChild(rect); g.appendChild(v);
+      g.addEventListener('pointerenter', function(e){ showTooltip(e.clientX, e.clientY, '~' + fmtDays(val) + ' days', who + ' · ' + r.label); });
+      g.addEventListener('pointermove', function(e){ showTooltip(e.clientX, e.clientY, '~' + fmtDays(val) + ' days', who + ' · ' + r.label); });
+      g.addEventListener('pointerleave', hideTooltip);
+      svg.appendChild(g);
+    }
+    bar(r.ward, COLOR.blue, y, '42nd Ward');
+    bar(r.city, COLOR.canceled, y + barH + barGap, 'Citywide');
+  });
+  container.appendChild(svg);
+
+  var legend = document.createElement('div');
+  legend.className = 'status-legend';
+  legend.innerHTML = '<div class="item"><span class="sw" style="background:'+COLOR.blue+'"></span><span>42nd Ward</span></div>' +
+    '<div class="item"><span class="sw" style="background:'+COLOR.canceled+'"></span><span>Citywide average</span></div>';
+  container.appendChild(legend);
+
+  var note = document.createElement('p'); note.className = 'chart-note';
+  note.textContent = 'Average days to resolve, completed requests, trailing 12 months. Shorter is better.';
+  container.appendChild(note);
+
+  var ph = rows.filter(function(r){ return /pothole/i.test(r.type); })[0];
+  var co = document.getElementById('cmpCallout');
+  if(co){
+    if(ph && ph.city > ph.ward * 1.5){
+      co.style.display = 'block';
+      co.innerHTML = 'The 42nd Ward fills a pothole in about <b>' + fmtDays(ph.ward) + ' days</b>, versus roughly <b>' + fmtDays(ph.city) + ' days</b> across the city as a whole.';
+    } else { co.style.display = 'none'; }
+  }
+  chartEntrance('cmpChart', function(){ playBarsEntrance(container); });
+}
+
+function renderPotholeCompare(wardData, cityData){
+  var container = document.getElementById('potholeChart');
+  container.innerHTML = '';
+  if(!wardData || !wardData.length){ container.innerHTML = '<p class="chart-note">No data available.</p>'; return; }
+  var cityMap = {};
+  (cityData||[]).forEach(function(d){ cityMap[d.y + '-' + d.m] = parseFloat(d.d); });
+  var pts = wardData.map(function(d){
+    var key = d.y + '-' + d.m;
+    return { y:parseInt(d.y,10), m:parseInt(d.m,10), ward:parseFloat(d.d), city:(cityMap[key] != null ? cityMap[key] : null), n:parseInt(d.n,10) };
+  });
+  var last = pts[pts.length-1];
+  if(last && last.y === NOW.getFullYear() && last.m === (NOW.getMonth()+1)) pts = pts.slice(0,-1);
+  pts = pts.filter(function(p){ return p.city != null && !isNaN(p.ward) && !isNaN(p.city); });
+  if(pts.length < 2){ container.innerHTML = '<p class="chart-note">Not enough data yet.</p>'; return; }
+
+  var width = Math.max(container.clientWidth, 320), height = 280;
+  var padL = 46, padR = 16, padT = 16, padB = 34;
+  var plotW = width - padL - padR, plotH = height - padT - padB;
+  var maxV = Math.max.apply(null, pts.map(function(p){ return Math.max(p.ward, p.city); }));
+  var niceMax = Math.ceil(maxV/10)*10 || 10;
+  function xFor(i){ return padL + plotW * i / (pts.length-1); }
+  function yFor(v){ return padT + plotH - plotH * v / niceMax; }
+
+  var svg = svgEl('svg', { viewBox:'0 0 '+width+' '+height, role:'img', 'aria-label':'42nd Ward versus citywide pothole resolution days by month' });
+  [0,0.5,1].forEach(function(f){
+    var yy = padT + plotH*(1-f);
+    svg.appendChild(svgEl('line', { x1:padL, x2:width-padR, y1:yy, y2:yy, class:'gridline' }));
+    var t = svgEl('text', { x:padL-8, y:yy, 'text-anchor':'end', 'dominant-baseline':'middle', class:'axis-tick' });
+    t.textContent = Math.round(niceMax*f) + 'd';
+    svg.appendChild(t);
+  });
+  pts.forEach(function(p, i){
+    if(i % 4 !== 0 && i !== pts.length-1) return;
+    var t = svgEl('text', { x:xFor(i), y:height-10, 'text-anchor':'middle', class:'axis-tick' });
+    t.textContent = MONTH_ABBR[p.m-1] + " '" + String(p.y).slice(2);
+    svg.appendChild(t);
+  });
+  function linePath(key){ var d=''; pts.forEach(function(p,i){ d += (i===0?'M':'L') + xFor(i) + ',' + yFor(p[key]); }); return d; }
+  var cityLine = svgEl('path', { d:linePath('city'), fill:'none', stroke:COLOR.canceled, 'stroke-width':'2', 'stroke-linejoin':'round', 'stroke-linecap':'round' });
+  svg.appendChild(cityLine);
+  var wardLine = svgEl('path', { d:linePath('ward'), fill:'none', stroke:COLOR.blue, 'stroke-width':'2', 'stroke-linejoin':'round', 'stroke-linecap':'round' });
+  svg.appendChild(wardLine);
+
+  var crosshair = svgEl('line', { x1:0, x2:0, y1:padT, y2:padT+plotH, stroke:COLOR.inkMuted, 'stroke-width':'1', opacity:'0' }); svg.appendChild(crosshair);
+  var dotW = svgEl('circle', { r:'4', fill:COLOR.blue, stroke:COLOR.surface2, 'stroke-width':'2', opacity:'0' }); svg.appendChild(dotW);
+  var dotC = svgEl('circle', { r:'4', fill:COLOR.canceled, stroke:COLOR.surface2, 'stroke-width':'2', opacity:'0' }); svg.appendChild(dotC);
+  var hit = svgEl('rect', { x:padL, y:padT, width:plotW, height:plotH, fill:'transparent', style:'cursor:crosshair;' }); svg.appendChild(hit);
+  hit.addEventListener('pointermove', function(e){
+    var rect = svg.getBoundingClientRect(); var sx = width/rect.width;
+    var mx = (e.clientX - rect.left) * sx;
+    var i = clamp(Math.round((mx-padL)/plotW*(pts.length-1)), 0, pts.length-1);
+    var p = pts[i]; var xx = xFor(i);
+    crosshair.setAttribute('x1', xx); crosshair.setAttribute('x2', xx); crosshair.setAttribute('opacity','1');
+    dotW.setAttribute('cx', xx); dotW.setAttribute('cy', yFor(p.ward)); dotW.setAttribute('opacity','1');
+    dotC.setAttribute('cx', xx); dotC.setAttribute('cy', yFor(p.city)); dotC.setAttribute('opacity','1');
+    showTooltip(e.clientX, e.clientY, 'Ward ~' + fmtDays(p.ward) + 'd · City ~' + fmtDays(p.city) + 'd', MONTH_NAMES[p.m-1] + ' ' + p.y);
+  });
+  hit.addEventListener('pointerleave', function(){ crosshair.setAttribute('opacity','0'); dotW.setAttribute('opacity','0'); dotC.setAttribute('opacity','0'); hideTooltip(); });
+  container.appendChild(svg);
+
+  var legend = document.createElement('div'); legend.className = 'status-legend';
+  legend.innerHTML = '<div class="item"><span class="sw" style="background:'+COLOR.blue+'"></span><span>42nd Ward</span></div>' +
+    '<div class="item"><span class="sw" style="background:'+COLOR.canceled+'"></span><span>Citywide average</span></div>';
+  container.appendChild(legend);
+  var note = document.createElement('p'); note.className = 'chart-note';
+  note.textContent = 'Average days to fill a pothole, completed requests. Shorter is better. Months with very few requests can swing sharply.';
+  container.appendChild(note);
+  chartEntrance('potholeChart', function(){ playLineEntrance(container, [cityLine, wardLine], [], []); });
+}
+
+/* ============================================================
+   MAP
+   ============================================================ */
+function initMap(){
+  if(mapReady) return;
+  try{
+    if(typeof L === 'undefined') throw new Error('Leaflet not available');
+    mapInstance = L.map('map', { scrollWheelZoom:false }).setView([41.893, -87.628], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapInstance);
+    mapMarkersLayer = L.layerGroup().addTo(mapInstance);
+    mapReady = true;
+
+    var legend = document.createElement('div');
+    legend.className = 'map-legend';
+    legend.innerHTML =
+      '<div class="item"><span class="sw" style="background:'+COLOR.good+'"></span> Completed</div>' +
+      '<div class="item"><span class="sw" style="background:'+COLOR.warn+'"></span> Open</div>' +
+      '<div class="item"><span class="sw" style="background:'+COLOR.canceled+'"></span> Canceled</div>';
+    document.querySelector('.map-shell').appendChild(legend);
+
+    renderMapMarkers(applyFilters(DETAIL_ROWS));
+  }catch(err){
+    var shell = document.querySelector('.map-shell');
+    shell.innerHTML = '<div class="map-fallback">Map view is unavailable right now. Browse results in the table below instead.</div>';
+  }
+}
+
+function renderMapMarkers(rows){
+  if(!mapReady || !mapMarkersLayer) return;
+  mapMarkersLayer.clearLayers();
+  var withGeo = rows.filter(function(r){ return r.lat !== null && r.lon !== null; });
+  var capped = withGeo.slice(0, 800);
+  capped.forEach(function(r){
+    var color = statusColorVar(r.status);
+    var marker = L.circleMarker([r.lat, r.lon], {
+      radius: 6,
+      color: COLOR.surface2,
+      weight: 1.5,
+      fillColor: color,
+      fillOpacity: 0.9
+    });
+    marker.on('click', function(){ openDetailPanel(r); });
+    marker.bindTooltip(escapeHtmlForLeaflet(r.sr_type) + ' · ' + escapeHtmlForLeaflet(r.status), { direction:'top', offset:[0,-6] });
+    marker.addTo(mapMarkersLayer);
+  });
+}
+function escapeHtmlForLeaflet(s){ return escapeHtml(s); }
+
+/* ============================================================
+   WHAT'S ON MY BLOCK (address or geolocation lookup, ~600m radius)
+   ============================================================ */
+var blockMarkersLayer = null;
+var _blockBusy = false;
+
+function initBlockLookup(){
+  var searchBtn = document.getElementById('blockSearchBtn');
+  var geoBtn = document.getElementById('blockGeoBtn');
+  var addrInput = document.getElementById('blockAddress');
+  if(!searchBtn || !geoBtn || !addrInput) return;
+  searchBtn.addEventListener('click', runBlockSearch);
+  geoBtn.addEventListener('click', runBlockGeolocation);
+  addrInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); runBlockSearch(); }
+  });
+}
+
+function setBlockBusy(isBusy){
+  _blockBusy = isBusy;
+  var searchBtn = document.getElementById('blockSearchBtn');
+  var geoBtn = document.getElementById('blockGeoBtn');
+  if(searchBtn) searchBtn.disabled = isBusy;
+  if(geoBtn) geoBtn.disabled = isBusy;
+}
+
+function showBlockError(message){
+  var errEl = document.getElementById('blockError');
+  document.getElementById('blockResult').innerHTML = '';
+  if(!errEl) return;
+  errEl.classList.add('is-visible');
+  errEl.innerHTML = escapeHtml(message);
+}
+
+function clearBlockError(){
+  var errEl = document.getElementById('blockError');
+  if(!errEl) return;
+  errEl.classList.remove('is-visible');
+  errEl.innerHTML = '';
+}
+
+function runBlockSearch(){
+  if(_blockBusy) return;
+  clearBlockError();
+  var input = document.getElementById('blockAddress');
+  var address = (input.value || '').trim();
+  if(!address){
+    showBlockError('Type an address first.');
+    return;
+  }
+  setBlockBusy(true);
+  document.getElementById('blockResult').innerHTML = '<div class="skeleton" style="height:44px;"></div>';
+  var geocodeUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(address + ', Chicago, IL');
+  fetchJSON(geocodeUrl, { timeout: 8000, retries: 0 }).then(function(results){
+    if(!results || !results.length){
+      setBlockBusy(false);
+      showBlockError('Couldn’t find that address. Try adding the street number and street name.');
+      return;
+    }
+    var lat = parseNum(results[0].lat), lon = parseNum(results[0].lon);
+    if(lat === null || lon === null || !pointInBox(lat, lon, CHICAGO_BOUNDS)){
+      setBlockBusy(false);
+      showBlockError('That doesn’t look like a Chicago address. Try including the street, city, and state.');
+      return;
+    }
+    track('block_lookup', { method: 'address' });
+    runBlockQuery(lat, lon);
+  }).catch(function(){
+    setBlockBusy(false);
+    showBlockError('Couldn’t reach the address lookup service right now. Try again in a moment.');
+  });
+}
+
+function runBlockGeolocation(){
+  if(_blockBusy) return;
+  clearBlockError();
+  if(!navigator.geolocation){
+    showBlockError('Location lookup isn’t supported in this browser.');
+    return;
+  }
+  setBlockBusy(true);
+  document.getElementById('blockResult').innerHTML = '<div class="skeleton" style="height:44px;"></div>';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat = pos.coords.latitude, lon = pos.coords.longitude;
+    track('block_lookup', { method: 'geolocation' });
+    runBlockQuery(lat, lon);
+  }, function(){
+    setBlockBusy(false);
+    showBlockError('Couldn’t get your location. Check that location access is allowed for this site, or type an address instead.');
+  }, { timeout: 8000, maximumAge: 60000 });
+}
+
+function runBlockQuery(lat, lon){
+  fetchJSON(buildBlockUrl(lat, lon), { timeout: 8000, retries: 1 }).then(function(rows){
+    setBlockBusy(false);
+    var cleaned = cleanDetailRows(rows);
+    renderBlockResult(cleaned);
+    showBlockResultsOnMap(lat, lon, cleaned);
+  }).catch(function(){
+    setBlockBusy(false);
+    showBlockError('Couldn’t load nearby requests from the live feed right now. Try again in a moment.');
+  });
+}
+
+function renderBlockResult(rows){
+  var el = document.getElementById('blockResult');
+  el.innerHTML = '';
+  if(!rows.length){
+    var none = document.createElement('p');
+    none.className = 'chart-note';
+    none.textContent = 'No Ward 42 requests found within about two blocks of this spot in the past year. This may be outside the ward, or the area may simply have no recent 311 activity.';
+    el.appendChild(none);
+    return;
+  }
+  var completed = 0, open = 0, canceled = 0;
+  rows.forEach(function(r){
+    var slug = statusSlug(r.status);
+    if(slug === 'completed') completed++;
+    else if(slug === 'open') open++;
+    else canceled++;
+  });
+
+  var summary = document.createElement('p');
+  summary.className = 'chart-note';
+  summary.innerHTML = '<strong class="mono">' + fmtInt(rows.length) + (rows.length >= 1000 ? '+' : '') + '</strong> requests within about 2 blocks in the past year.';
+  el.appendChild(summary);
+
+  var legend = document.createElement('div');
+  legend.className = 'status-legend';
+  function legItem(color, label, n){
+    var it = document.createElement('div'); it.className = 'item';
+    it.innerHTML = '<span class="sw" style="background:' + color + '"></span><span><strong class="mono">' + fmtInt(n) + '</strong> ' + label + '</span>';
+    return it;
+  }
+  legend.appendChild(legItem(COLOR.good, 'Completed', completed));
+  legend.appendChild(legItem(COLOR.warn, 'Open', open));
+  legend.appendChild(legItem(COLOR.canceled, 'Canceled', canceled));
+  el.appendChild(legend);
+
+  var note = document.createElement('p');
+  note.className = 'chart-note';
+  note.style.marginTop = '10px';
+  note.textContent = 'Pinned on the map below. Click a pin for the full record.';
+  el.appendChild(note);
+}
+
+function showBlockResultsOnMap(lat, lon, rows){
+  if(!mapReady || !mapInstance) return;
+  if(!blockMarkersLayer) blockMarkersLayer = L.layerGroup().addTo(mapInstance);
+  blockMarkersLayer.clearLayers();
+
+  var center = L.circleMarker([lat, lon], {
+    radius: 9,
+    color: COLOR.blue,
+    weight: 2,
+    fillColor: COLOR.blue,
+    fillOpacity: 0.18
+  });
+  center.bindTooltip('Searched location', { direction:'top', offset:[0,-8] });
+  center.addTo(blockMarkersLayer);
+
+  var withGeo = rows.filter(function(r){ return r.lat !== null && r.lon !== null; });
+  withGeo.forEach(function(r){
+    var color = statusColorVar(r.status);
+    var marker = L.circleMarker([r.lat, r.lon], {
+      radius: 8,
+      color: COLOR.ink,
+      weight: 1.5,
+      fillColor: color,
+      fillOpacity: 0.95
+    });
+    marker.on('click', function(){ openDetailPanel(r); });
+    marker.bindTooltip(escapeHtmlForLeaflet(r.sr_type) + ' · ' + escapeHtmlForLeaflet(r.status), { direction:'top', offset:[0,-6] });
+    marker.addTo(blockMarkersLayer);
+  });
+
+  mapInstance.setView([lat, lon], 16);
+  var shell = document.querySelector('.map-shell');
+  if(shell && shell.scrollIntoView) shell.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+function renderTable(rows){
+  var tbody = document.getElementById('srTableBody');
+  tbody.innerHTML = '';
+  var total = rows.length;
+  var totalPages = Math.max(1, Math.ceil(total / TABLE_PAGE_SIZE));
+  TABLE_PAGE = clamp(TABLE_PAGE, 0, totalPages-1);
+  var start = TABLE_PAGE * TABLE_PAGE_SIZE;
+  var pageRows = rows.slice(start, start + TABLE_PAGE_SIZE);
+
+  if(!pageRows.length){
+    var tr0 = document.createElement('tr');
+    var td0 = document.createElement('td'); td0.colSpan = 5; td0.textContent = 'No requests match these filters.';
+    td0.style.textAlign = 'center'; td0.style.color = 'var(--ink-muted)'; td0.style.padding = '30px 0';
+    tr0.appendChild(td0); tbody.appendChild(tr0);
+  }
+
+  pageRows.forEach(function(r){
+    var tr = document.createElement('tr');
+    tr.tabIndex = 0;
+    tr.setAttribute('role','button');
+
+    var tdAddr = document.createElement('td'); tdAddr.className = 'addr'; tdAddr.textContent = r.street_address || 'Address not on file';
+    var tdType = document.createElement('td'); tdType.textContent = r.sr_type;
+    var tdStatus = document.createElement('td');
+    var chip = document.createElement('span');
+    var slug = statusSlug(r.status);
+    chip.className = 'status-chip st-' + slug;
+    chip.textContent = r.status;
+    tdStatus.appendChild(chip);
+    var tdFiled = document.createElement('td'); tdFiled.textContent = fmtDateShort(r.created_date);
+    var tdDays = document.createElement('td'); tdDays.className = 'days';
+    if(slug === 'completed'){
+      var d = daysBetween(r.last_modified_date, r.created_date);
+      tdDays.textContent = d !== null ? (fmtDays(d) + 'd') : '—';
+    } else if(slug === 'open'){
+      var e = daysBetween(NOW.toISOString(), r.created_date);
+      tdDays.textContent = e !== null ? (fmtDays(e) + 'd elapsed') : '—';
+    } else {
+      tdDays.textContent = '—';
+    }
+
+    tr.appendChild(tdAddr); tr.appendChild(tdType); tr.appendChild(tdStatus); tr.appendChild(tdFiled); tr.appendChild(tdDays);
+    tr.addEventListener('click', function(){ openDetailPanel(r); });
+    tr.addEventListener('keydown', function(e){ if(e.key==='Enter'){ openDetailPanel(r); } });
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('tableCount').textContent = fmtInt(total) + ' matching requests';
+  document.getElementById('pageLabel').textContent = (totalPages ? (TABLE_PAGE+1) : 0) + ' / ' + totalPages;
+  document.getElementById('pagePrev').disabled = TABLE_PAGE <= 0;
+  document.getElementById('pageNext').disabled = TABLE_PAGE >= totalPages-1;
+}
+
+/* ============================================================
+   RESIZE: re-render SVG charts (viewBox-based, but re-measure label widths)
+   ============================================================ */
+var _resizeTimer;
+window.addEventListener('resize', function(){
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(function(){
+    rerenderAllCharts();
+  }, 200);
+});
+
+})();
+</script>
+</body>
+</html>
