@@ -19,7 +19,7 @@
 <meta name="twitter:image" content="https://ward42report.org/preview.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 
 <!-- ============================================================
@@ -30,7 +30,7 @@
      deploy, change those to your absolute URL for Facebook and LinkedIn.
      ============================================================ -->
 <script>
-  window.GA_ID = ""; /* <-- paste your GA4 Measurement ID between the quotes, nothing else to change */
+  window.GA_ID = "G-QNM7KJZD5M"; /* GA4 Measurement ID; loads gtag.js and tracks page views, outbound clicks, scroll, and custom events */
   if (window.GA_ID) {
     var _gaScript = document.createElement('script');
     _gaScript.async = true;
@@ -56,7 +56,7 @@
       }
     }catch(e){}
   })();
-</script></script>
+</script>
 
 <style>
 
@@ -579,6 +579,129 @@ footer.site-footer p{ font-size:12.5px; color:var(--ink-muted); margin:0; }
   .anim-ready .flag-rule{ transform:none !important; }
   .live-dot::after{ animation:none !important; }
 }
+
+/* ============================= MONUMENT SKIN (direction A + Chicago stars) =============================
+   Appended last so it re-skins the base styles without touching any JavaScript.
+   Swiss/brutalist civic report: stark white/near-black, bold grotesk type, thick
+   rules, giant tabular numerals, squared elements, and the red Chicago flag star. */
+
+/* palette: stark, high-contrast, Chicago flag blue + red */
+:root{
+  --page:#ffffff; --surface:#f6f6f6; --surface2:#ffffff;
+  --ink:#0a0a0a; --ink-2:#333333; --ink-muted:#6f6f6f;
+  --hairline:#e6e6e6; --hairline-strong:#0a0a0a;
+  --blue:#0089cf; --blue-wash:rgba(0,137,207,.10); --blue-wash-strong:rgba(0,137,207,.20);
+  --red:#d40b2f; --focus-ring:0 0 0 3px rgba(0,137,207,.4);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --page:#0b0b0c; --surface:#141416; --surface2:#161618;
+    --ink:#f5f5f3; --ink-2:#c3c3bd; --ink-muted:#8d8d86;
+    --hairline:#2a2a2c; --hairline-strong:#f5f5f3;
+    --blue:#4fb2e8; --blue-wash:rgba(79,178,232,.14); --blue-wash-strong:rgba(79,178,232,.26); --red:#ff5d73;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0b0b0c; --surface:#141416; --surface2:#161618;
+  --ink:#f5f5f3; --ink-2:#c3c3bd; --ink-muted:#8d8d86;
+  --hairline:#2a2a2c; --hairline-strong:#f5f5f3;
+  --blue:#4fb2e8; --blue-wash:rgba(79,178,232,.14); --blue-wash-strong:rgba(79,178,232,.26); --red:#ff5d73;
+}
+:root[data-theme="light"]{
+  --page:#ffffff; --surface:#f6f6f6; --surface2:#ffffff;
+  --ink:#0a0a0a; --ink-2:#333333; --ink-muted:#6f6f6f;
+  --hairline:#e6e6e6; --hairline-strong:#0a0a0a;
+  --blue:#0089cf; --blue-wash:rgba(0,137,207,.10); --blue-wash-strong:rgba(0,137,207,.20); --red:#d40b2f;
+}
+
+/* type: neo-grotesk everywhere, tabular numerals for figures */
+body{ font-family:"Inter",-apple-system,sans-serif; }
+.serif{ font-family:"Archivo","Inter",sans-serif; letter-spacing:-.01em; }
+.mono{ font-family:"Archivo","Inter",sans-serif; font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+
+/* section rhythm: thick ink rules */
+section{ border-bottom:3px solid var(--ink); }
+section:last-of-type{ border-bottom:none; }
+
+/* eyebrows: bold grotesk with a red Chicago flag star */
+.eyebrow{ font-family:"Archivo",sans-serif; font-weight:700; letter-spacing:.14em; color:var(--ink-2); }
+.eyebrow::before{ content:"✶ "; color:var(--red); }
+
+/* section titles: bold uppercase */
+h2.section-title{ font-family:"Archivo",sans-serif; font-weight:800; text-transform:uppercase; letter-spacing:-.01em; font-size:clamp(1.6rem,1.1rem+1.8vw,2.4rem); }
+
+/* masthead */
+.masthead h1{ font-family:"Archivo",sans-serif; font-weight:900; text-transform:uppercase; letter-spacing:-.02em; font-size:clamp(2.2rem,1.3rem+4vw,4.2rem); line-height:.92; margin-top:10px; }
+.masthead .kicker{ font-family:"Archivo",sans-serif; font-weight:700; letter-spacing:.2em; }
+.masthead .kicker .star{ color:var(--red); font-size:12px; }
+.masthead-actions{ display:flex; flex-direction:column; align-items:flex-end; gap:10px; flex:none; }
+.ward-link{ font-family:"Archivo",sans-serif; font-weight:600; font-size:12.5px; letter-spacing:.01em; color:var(--ink); text-decoration:none; border-bottom:2px solid var(--blue); padding-bottom:1px; white-space:nowrap; }
+.ward-link:hover{ color:var(--blue); }
+.theme-toggle{ border:2px solid var(--hairline-strong); border-radius:0; font-family:"Archivo",sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.06em; font-size:11px; }
+
+/* flag rule: bold ink bar (its left-to-right draw is handled by the animation block) */
+.flag-rule{ height:4px; background:var(--ink); opacity:1; }
+
+/* lede */
+.lede p{ font-family:"Inter",sans-serif; font-weight:400; color:var(--ink); }
+
+/* hero figures: giant grotesk numerals in a thick frame */
+.figures{ border-top:3px solid var(--ink); border-bottom:3px solid var(--ink); }
+.figure .fig-value{ font-family:"Archivo",sans-serif; font-weight:800; font-size:clamp(2rem,1.4rem+2.4vw,3.2rem); letter-spacing:-.02em; }
+.figure:nth-child(2) .fig-value, .figure:nth-child(4) .fig-value{ color:var(--blue); }
+.figure .fig-value .unit{ font-weight:600; color:var(--ink-muted); }
+
+/* chart chrome */
+.bar-label{ font-family:"Inter",sans-serif; font-weight:500; fill:var(--ink); }
+.bar-value{ font-family:"Archivo",sans-serif; font-weight:700; fill:var(--ink); }
+.axis-tick text{ font-family:"Archivo",sans-serif; }
+.chart-callout{ border-left:3px solid var(--red); }
+
+/* getting to done: monumental number */
+.status-hero .big{ font-family:"Archivo",sans-serif; font-weight:900; letter-spacing:-.03em; color:var(--ink); font-size:clamp(3rem,2rem+4vw,5rem); }
+.status-hero .big-cap{ color:var(--ink-2); }
+.status-stack{ border-radius:0; }
+
+/* controls: squared, bordered */
+.filter-row{ background:var(--surface); border:2px solid var(--ink); border-radius:0; }
+.filter-row select, .filter-row input[type="search"]{ border:1.5px solid var(--hairline-strong); border-radius:0; font-family:"Inter",sans-serif; }
+.status-toggle{ border:1.5px solid var(--hairline-strong); border-radius:0; }
+.status-toggle button{ font-family:"Archivo",sans-serif; font-weight:600; }
+.status-toggle button.is-active{ background:var(--ink); color:var(--page); }
+.filter-reset, .pager button{ border:1.5px solid var(--hairline-strong); border-radius:0; font-family:"Archivo",sans-serif; font-weight:600; }
+
+/* map / table: squared, framed */
+.map-shell, .table-scroll{ border:2px solid var(--ink); border-radius:0; }
+.map-legend{ border:1.5px solid var(--ink); border-radius:0; box-shadow:none; }
+table.sr-table thead th{ font-family:"Archivo",sans-serif; font-weight:700; }
+table.sr-table td.days{ font-family:"Archivo",sans-serif; }
+.status-chip{ border-radius:2px; font-family:"Archivo",sans-serif; font-weight:600; }
+
+/* detail panel: squared with a hard offset shadow */
+.detail-panel{ border:2px solid var(--ink); border-radius:0; box-shadow:10px 10px 0 rgba(0,0,0,.14); }
+.detail-panel h3{ font-family:"Archivo",sans-serif; font-weight:800; text-transform:uppercase; letter-spacing:-.01em; }
+.detail-grid dt{ font-family:"Archivo",sans-serif; }
+
+/* report CTA: bold bordered bar with a blue spine */
+.report-cta-inner{ background:var(--surface2); border:2px solid var(--ink); border-left:8px solid var(--blue); border-radius:0; }
+.report-cta-kicker{ font-family:"Archivo",sans-serif; font-weight:800; text-transform:uppercase; letter-spacing:-.01em; color:var(--ink); }
+.report-cta-sub{ color:var(--ink-2); }
+.report-cta-btn{ background:var(--blue); color:#fff; border-radius:0; font-family:"Archivo",sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+
+/* tooltip */
+.viz-tooltip{ border-radius:0; font-family:"Inter",sans-serif; }
+.viz-tooltip .tt-value{ font-family:"Archivo",sans-serif; }
+
+/* ANIMATION POLISH: bolder lift on reveal, the flag rule wipes in from the left */
+.anim-ready .flag-rule{ transform-origin:left center; }
+.anim-ready .masthead.is-revealed .flag-rule{ transition:transform .9s cubic-bezier(.16,.84,.44,1) .1s; }
+.anim-ready .wrap > section, .anim-ready .wrap > .masthead{ transform:translateY(20px); }
+.anim-ready .wrap > section.is-revealed, .anim-ready .wrap > .masthead.is-revealed{ transition:opacity .65s ease, transform .75s cubic-bezier(.16,.84,.44,1); }
+
+/* mobile: stack the masthead actions to the left under the headline */
+@media (max-width:640px){
+  .masthead-actions{ flex-direction:row; align-items:center; gap:14px; margin-top:14px; }
+}
 </style>
 </head>
 <body>
@@ -589,14 +712,17 @@ footer.site-footer p{ font-size:12.5px; color:var(--ink-muted); margin:0; }
   <header class="masthead">
     <div class="masthead-top">
       <div>
-        <div class="kicker"><span class="star">★</span> AN INDEPENDENT CIVIC REPORT <span class="star">★</span></div>
+        <div class="kicker"><span class="star">✶</span> AN INDEPENDENT CIVIC REPORT <span class="star">✶</span></div>
         <h1 class="serif">The 42nd Ward Service Report</h1>
         <div class="dateline">
           <span class="live-dot" aria-hidden="true"></span>
           <span>Live from the City of Chicago 311 system, updated every time this page loads.</span>
         </div>
       </div>
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark mode">Toggle theme</button>
+      <div class="masthead-actions">
+        <a class="ward-link" href="https://ward42chicago.com/" target="_blank" rel="noopener">Alderman Reilly's office ↗</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark mode">Toggle theme</button>
+      </div>
     </div>
     <div class="flag-rule" aria-hidden="true"></div>
   </header>
@@ -812,7 +938,7 @@ footer.site-footer p{ font-size:12.5px; color:var(--ink-muted); margin:0; }
 
 <footer class="site-footer">
   <div class="wrap">
-    <p>Data: City of Chicago 311 Service Requests (dataset v6vf-nfxy), via the Socrata open data API. Report a problem to the city directly at <a href="https://311.chicago.gov/" target="_blank" rel="noopener">311.chicago.gov</a>. This page is unaffiliated and independently built.</p>
+    <p>Data: City of Chicago 311 Service Requests (dataset v6vf-nfxy), via the Socrata open data API. Report a problem to the city directly at <a href="https://311.chicago.gov/" target="_blank" rel="noopener">311.chicago.gov</a>, or visit the <a href="https://ward42chicago.com/" target="_blank" rel="noopener">42nd Ward Alderman's office</a>. This page is unaffiliated and independently built.</p>
   </div>
 </footer>
 
@@ -1708,7 +1834,7 @@ function renderTypesChart(data){
       var titleEl = svgEl('title', {}); titleEl.textContent = r.type; label.appendChild(titleEl);
     }
 
-    var rect = svgEl('path', { d: roundedBarPath(labelW, barY, w, barH, 4), fill: COLOR.blue, class:'bar-fill' });
+    var rect = svgEl('path', { d: roundedBarPath(labelW, barY, w, barH, 0), fill: COLOR.blue, class:'bar-fill' });
 
     var valLabel = svgEl('text', { x: labelW + w + 10, y: barY + barH/2, 'dominant-baseline':'middle', class:'bar-value' });
     valLabel.textContent = fmtInt(r.n);
@@ -1781,7 +1907,7 @@ function renderResolutionChart(data){
     label.textContent = labelText;
     if(labelText !== r.type){ var t1 = svgEl('title',{}); t1.textContent = r.type; label.appendChild(t1); }
 
-    var rect = svgEl('path', { d: roundedBarPath(labelW, barY, w, barH, 4), fill: isZero ? COLOR.hairline : COLOR.blue, class:'bar-fill' });
+    var rect = svgEl('path', { d: roundedBarPath(labelW, barY, w, barH, 0), fill: isZero ? COLOR.hairline : COLOR.blue, class:'bar-fill' });
 
     var valText = isZero ? 'same day †' : ('~' + fmtDays(r.avg) + (fmtDays(r.avg)==='1'?' day':' days'));
     var valLabel = svgEl('text', { x: labelW + w + 10, y: barY + barH/2, 'dominant-baseline':'middle', class:'bar-value' });
@@ -2032,7 +2158,7 @@ function renderCompareChart(wardData, cityData){
     function bar(val, color, yy, who){
       var w = Math.max(plotW * (val/maxVal), 4);
       var g = svgEl('g', { class:'bar-row', tabindex:'0', role:'img', 'aria-label': who + ' ' + r.label + ': about ' + fmtDays(val) + ' days' });
-      var rect = svgEl('path', { d: roundedBarPath(labelW, yy, w, barH, 4), fill: color, class:'bar-fill' });
+      var rect = svgEl('path', { d: roundedBarPath(labelW, yy, w, barH, 0), fill: color, class:'bar-fill' });
       var v = svgEl('text', { x: labelW + w + 8, y: yy + barH/2, 'dominant-baseline':'middle', class:'bar-value' });
       v.textContent = '~' + fmtDays(val) + (fmtDays(val) === '1' ? ' day' : ' days');
       g.appendChild(rect); g.appendChild(v);
