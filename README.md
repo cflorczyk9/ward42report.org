@@ -70,14 +70,22 @@ Common fixes:
 - **No social preview image on Facebook or LinkedIn:** those two require an absolute image URL. It is already set to `https://ward42report.org/preview.png`. If you host on a different domain, update `og:image` and `twitter:image` in `index.html` to match.
 - **Address search does nothing:** OpenStreetMap's geocoder occasionally rate-limits. Wait a few seconds and try again, or use "Use my location."
 
-## Turn on traffic tracking (Google Analytics)
+## Staying current (it's automatic)
 
-The GA4 snippet is already in the page but inert. To activate:
-1. Go to analytics.google.com, create a free GA4 property for this site.
-2. Copy your Measurement ID (looks like `G-ABCD1234`).
-3. In `index.html`, find `window.GA_ID = ""` near the top and paste your ID between the quotes. That is the only edit, one place. The tracking script loads itself from that value.
+The page has no database and no build step. Every visit runs live queries against the City of Chicago 311 feed in the browser and computes the trailing 12 months from the current date, so the data is never stale. There is nothing to schedule or rebuild.
 
-Once live, GA4 auto-tracks page views, outbound clicks (including the "Report it to 311" button), and scroll depth. The page also fires a custom `view_request` event whenever someone opens a request's detail card, so you can see what people dig into.
+The one thing outside your control is the City itself. If they ever retire, rename, or restructure the 311 dataset, the page would quietly show its "couldn't load" banner. To catch that:
+
+- **`.github/workflows/health-check.yml`** runs daily, checks the 311 feed still returns Ward 42 data with the exact fields the site uses, and **fails if anything changed**. GitHub emails you (the repo owner) on a failed run, so you find out the next morning instead of months later. You can also run it on demand from the repo's **Actions** tab.
+- Heads-up: GitHub pauses scheduled workflows after ~60 days with no commits to the repo. If that happens it emails you, and any commit (or clicking "Enable" in the Actions tab) restarts it.
+- Keep **auto-renew on** for the domain at Namecheap so the registration never lapses.
+- The **social card** (`preview.png`) is number-free on purpose, so it can never show outdated figures.
+
+## Traffic tracking (Google Analytics)
+
+GA4 is **already active** with Measurement ID `G-QNM7KJZD5M` (set once via `window.GA_ID` near the top of `index.html`). To point it at a different property, change that one value.
+
+GA4 auto-tracks page views, outbound clicks (including the "Report it to 311" button), and scroll depth. The page also fires a custom `view_request` event whenever someone opens a request's detail card, so you can see what people dig into. Data only starts appearing once the site is deployed and getting visits (check Analytics > Realtime).
 
 Privacy note: GA4 sets cookies. If you'd rather not, a cookieless alternative like Plausible or GoatCounter drops in the same way and needs no consent banner. Say the word and I'll swap it.
 
