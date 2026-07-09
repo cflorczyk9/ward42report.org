@@ -702,6 +702,21 @@ table.sr-table td.days{ font-family:"Archivo",sans-serif; }
 @media (max-width:640px){
   .masthead-actions{ flex-direction:row; align-items:center; gap:14px; margin-top:14px; }
 }
+
+/* fix: give each figure breathing room from its divider line (was flush-left) */
+.figure{ padding:22px 26px; }
+.figure:first-child{ padding-left:0; }
+.figure .fig-cap{ max-width:26ch; }
+
+/* "what's on my block": a bold, pulsing, labelled marker for the searched spot */
+.you-marker{ position:relative; }
+.you-dot{ position:absolute; left:50%; top:50%; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; background:var(--blue); border:3px solid #fff; box-shadow:0 0 0 1.5px var(--ink); }
+.you-ring{ position:absolute; left:50%; top:50%; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; background:var(--blue); opacity:.5; }
+@media (prefers-reduced-motion: no-preference){
+  .you-ring{ animation:youPulse 1.8s ease-out infinite; }
+}
+@keyframes youPulse{ 0%{ transform:scale(1); opacity:.5; } 70%{ transform:scale(4); opacity:0; } 100%{ transform:scale(4); opacity:0; } }
+.you-label.leaflet-tooltip{ font-family:"Archivo",sans-serif; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.04em; padding:4px 8px; }
 </style>
 </head>
 <body>
@@ -2465,22 +2480,38 @@ function showBlockResultsOnMap(lat, lon, rows){
   if(!blockMarkersLayer) blockMarkersLayer = L.layerGroup().addTo(mapInstance);
   blockMarkersLayer.clearLayers();
 
-  var center = L.circleMarker([lat, lon], {
-    radius: 9,
+  // Highlight the searched area with a dashed circle at the true search radius.
+  var area = L.circle([lat, lon], {
+    radius: BLOCK_RADIUS_M,
     color: COLOR.blue,
     weight: 2,
+    opacity: 0.9,
     fillColor: COLOR.blue,
-    fillOpacity: 0.18
+    fillOpacity: 0.07,
+    dashArray: '6 6'
   });
-  center.bindTooltip('Searched location', { direction:'top', offset:[0,-8] });
+  area.addTo(blockMarkersLayer);
+
+  // Prominent, labelled marker at the searched location so it's unmistakable.
+  var center = L.marker([lat, lon], {
+    icon: L.divIcon({
+      className: 'you-marker',
+      html: '<span class="you-ring"></span><span class="you-dot"></span>',
+      iconSize: [18,18],
+      iconAnchor: [9,9]
+    }),
+    zIndexOffset: 1000,
+    keyboard: false
+  });
+  center.bindTooltip('Searched location', { permanent:true, direction:'top', offset:[0,-12], className:'you-label' });
   center.addTo(blockMarkersLayer);
 
   var withGeo = rows.filter(function(r){ return r.lat !== null && r.lon !== null; });
   withGeo.forEach(function(r){
     var color = statusColorVar(r.status);
     var marker = L.circleMarker([r.lat, r.lon], {
-      radius: 8,
-      color: COLOR.ink,
+      radius: 7,
+      color: COLOR.surface2,
       weight: 1.5,
       fillColor: color,
       fillOpacity: 0.95
@@ -2490,7 +2521,9 @@ function showBlockResultsOnMap(lat, lon, rows){
     marker.addTo(blockMarkersLayer);
   });
 
-  mapInstance.setView([lat, lon], 16);
+  // Frame the whole searched area rather than a fixed zoom.
+  try{ mapInstance.fitBounds(area.getBounds(), { padding:[40,40], maxZoom:16 }); }
+  catch(e){ mapInstance.setView([lat, lon], 16); }
   var shell = document.querySelector('.map-shell');
   if(shell && shell.scrollIntoView) shell.scrollIntoView({ behavior:'smooth', block:'center' });
 }
